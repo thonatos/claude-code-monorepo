@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a pnpm monorepo containing the `wechat-acp` and `telegram-acp` packages - bridges that connect messaging platforms to ACP-compatible AI agents.
+A pnpm monorepo containing `telegram-acp` - a bridge that connects Telegram direct messages to ACP-compatible AI agents via grammy Bot API.
 
 ## Workflow Requirements
 
@@ -25,18 +25,18 @@ Before ANY implementation, you MUST:
 
 ```bash
 pnpm install          # Install dependencies
-pnpm add <pkg>        # Add dependency
-pnpm run build        # Build package
-pnpm run test         # Run tests
+pnpm add <pkg>        # Add dependency to workspace root
+pnpm --filter <pkg> add <dep>  # Add dependency to specific package
 ```
 
 **Do NOT use `npm` or `yarn` commands.**
 
 ## Commands
 
-### Build & Develop (in `packages/*/`)
+### Build & Develop
 
 ```bash
+cd packages/telegram-acp
 pnpm run build     # Compile TypeScript to dist/
 pnpm run dev       # Watch mode
 pnpm run start     # Run compiled CLI
@@ -45,83 +45,76 @@ pnpm run start     # Run compiled CLI
 ### CLI Commands
 
 ```bash
-npx wechat-acp --agent <preset|command> [options]  # Start bridge with agent
-npx wechat-acp agents                               # List built-in presets
-npx wechat-acp stop                                 # Stop daemon
-npx wechat-acp status                               # Check status
+npx telegram-acp --preset <name>    # Start with preset
+npx telegram-acp --config <file>    # Start with config file
+npx telegram-acp agents             # List available presets
+npx telegram-acp                    # Start with default config
 ```
 
 ### Built-in Agent Presets
 
-`copilot`, `claude`, `gemini`, `qwen`, `codex`, `opencode`
+`copilot`, `claude`, `codex`
 
 ## Architecture
 
-### telegram-acp
-
 ```
 packages/telegram-acp/
-├── bin/telegram-acp.ts        # CLI entry point
 ├── src/
-│   ├── index.ts               # Package exports
-│   ├── bot.ts                 # grammy Bot wrapper
-│   ├── bridge.ts              # Core message bridge logic
-│   ├── config.ts              # Configuration and CLI parsing
-│   ├── middleware/            # grammy middleware
-│   │   ├── auth.ts            # User authentication
-│   │   └── acp-session.ts     # ACP session injection
-│   ├── handlers/              # Message handlers
-│   │   └── message.ts         # Main message handler
-│   └── acp/                   # ACP integration
-│       └── session.ts         # Per-user session management
+│   ├── bin/telegram-acp.ts   # CLI entry point, arg parsing
+│   ├── index.ts              # Package exports
+│   ├── bridge.ts             # Orchestration: creates bot + session manager
+│   ├── bot.ts                # grammy Bot setup, middleware, handlers
+│   ├── client.ts             # ACP Client implementation
+│   ├── session.ts            # Per-user session lifecycle, agent spawning
+│   └── config.ts             # Config loading, presets, defaults
 ```
 
-### wechat-acp
+**Key flows:**
 
-```
-packages/wechat-acp/
-├── bin/wechat-acp.ts          # CLI entry point
-├── src/
-│   ├── index.ts               # Package exports
-│   ├── bridge.ts              # Core message bridge logic
-│   ├── config.ts              # Configuration and CLI parsing
-│   ├── acp/                   # ACP agent integration
-│   │   ├── agent-manager.ts   # Manages agent subprocesses
-│   │   ├── client.ts          # ACP client protocol
-│   │   └── session.ts         # Per-user session management
-│   ├── adapter/               # Message adaptation
-│   │   ├── inbound.ts         # WeChat → ACP
-│   │   └── outbound.ts        # ACP → WeChat
-│   └── weixin/                # WeChat API integration
-│       ├── api.ts             # WeChat iLink bot API
-│       ├── auth.ts            # QR login and token management
-│       ├── monitor.ts         # Message polling
-│       ├── send.ts            # Message sending
-│       ├── media.ts           # Media handling
-│       └── types.ts           # Type definitions
-```
+1. **Startup**: CLI parses args → loadConfig → TelegramAcpBridge.start() → create SessionManager + Bot
+2. **Message**: grammy middleware chain (auth → session) → messageHandler → ACP prompt → agent subprocess → reply
+3. **Session**: One ACP session per Telegram user, spawned via stdio, auto-cleanup after idle timeout
 
-## Key Flows
-
-1. **Login**: QR code rendered in terminal → token saved to `~/.wechat-acp`
-2. **Message Flow**: WeChat DM → inbound adapter → ACP session → agent subprocess → outbound adapter → WeChat reply
-3. **Session Model**: One ACP session per WeChat user, auto-cleanup after idle timeout
+**Middleware chain (in bot.ts):**
+- Auth: whitelist check or open mode
+- Session: inject UserSession into context
+- Commands: /start, /help, /status
+- Messages: forward to ACP agent
 
 ## Configuration
 
-Runtime files stored in `~/.wechat-acp/` (token, pid, logs, sync state)
+Runtime files stored in `~/.telegram-acp/` (config.yaml)
 
-Config file format (via `--config`):
-```json
-{
-  "agent": { "preset": "copilot" },
-  "session": { "idleTimeoutMs": 86400000, "maxConcurrentUsers": 10 }
-}
+Config file format (YAML):
+```yaml
+telegram:
+  botToken: "..."
+
+agent:
+  preset: claude
+
+proxy: "socks5://user:pass@host:port"
+
+allowedUsers:
+  - "123456"
+
+open: false
+
+reaction:
+  enabled: true
+  emoji: "👍"
+
+session:
+  idleTimeoutMs: 86400000
+  maxConcurrentUsers: 10
+
+showThoughts: false
 ```
 
 ## Notes
 
 - Requires Node.js 20+
 - Only processes direct messages (group chats ignored)
-- Permission requests are auto-approved
+- Permission requests auto-approved
 - MCP servers not used
+- Proxy support via SOCKS5

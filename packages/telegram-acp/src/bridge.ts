@@ -43,11 +43,7 @@ export class TelegramAcpBridge {
     });
 
     // Create and start bot
-    this.bot = createBot(
-      this.config.telegram.botToken,
-      this.config,
-      this.sessionManager,
-    );
+    this.bot = createBot(this.config.telegram.botToken, this.config, this.sessionManager);
 
     await startBot(this.bot);
 

@@ -90,9 +90,7 @@ export function defaultConfig(): TelegramAcpConfig {
   };
 }
 
-export function resolvePreset(
-  presetName: string,
-): { id: string; preset: AgentPreset } | null {
+export function resolvePreset(presetName: string): { id: string; preset: AgentPreset } | null {
   const preset = PRESETS[presetName];
   if (!preset) return null;
   return { id: presetName, preset };
@@ -128,8 +126,10 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
         config.agent.showThoughts = fileConfig.agent.showThoughts ?? config.agent.showThoughts;
       }
       if (fileConfig.session) {
-        config.session.idleTimeoutMs = fileConfig.session.idleTimeoutMs ?? config.session.idleTimeoutMs;
-        config.session.maxConcurrentUsers = fileConfig.session.maxConcurrentUsers ?? config.session.maxConcurrentUsers;
+        config.session.idleTimeoutMs =
+          fileConfig.session.idleTimeoutMs ?? config.session.idleTimeoutMs;
+        config.session.maxConcurrentUsers =
+          fileConfig.session.maxConcurrentUsers ?? config.session.maxConcurrentUsers;
       }
       if (fileConfig.reaction) config.reaction = fileConfig.reaction;
 

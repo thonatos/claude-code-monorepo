@@ -23,7 +23,10 @@ export class TelegramAcpClient implements acp.Client {
     this.opts = opts;
   }
 
-  updateCallbacks(callbacks: { sendTyping?: () => Promise<void>; onThoughtFlush: (text: string) => Promise<void> }): void {
+  updateCallbacks(callbacks: {
+    sendTyping?: () => Promise<void>;
+    onThoughtFlush: (text: string) => Promise<void>;
+  }): void {
     this.opts = {
       ...this.opts,
       ...callbacks,
@@ -31,10 +34,10 @@ export class TelegramAcpClient implements acp.Client {
   }
 
   async requestPermission(
-    params: acp.RequestPermissionRequest,
+    params: acp.RequestPermissionRequest
   ): Promise<acp.RequestPermissionResponse> {
     const allowOpt = params.options.find(
-      (o) => o.kind === "allow_once" || o.kind === "allow_always",
+      (o) => o.kind === "allow_once" || o.kind === "allow_always"
     );
     const optionId = allowOpt?.optionId ?? params.options[0]?.optionId ?? "allow";
 

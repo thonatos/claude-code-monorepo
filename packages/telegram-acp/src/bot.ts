@@ -22,10 +22,12 @@ export type { Bot };
 export function createBot(
   token: string,
   config: TelegramAcpConfig,
-  sessionManager: SessionManager,
+  sessionManager: SessionManager
 ): Bot {
   // Bot options (with proxy if configured)
-  const botOptions = {} as { client?: { baseFetchConfig: { agent: SocksProxyAgent; compress: boolean } } };
+  const botOptions = {} as {
+    client?: { baseFetchConfig: { agent: SocksProxyAgent; compress: boolean } };
+  };
   if (config.proxy) {
     botOptions.client = {
       baseFetchConfig: {
@@ -49,8 +51,12 @@ export function createBot(
   bot.use(sessionMiddleware(sessionManager));
 
   // --- Layer 4: Command handlers (must be before message handler) ---
-  bot.command("start", (ctx) => ctx.reply("Telegram ACP ready. Send a message to chat with the AI agent."));
-  bot.command("help", (ctx) => ctx.reply("Send any message to chat with the AI agent. Commands: /start, /help, /status"));
+  bot.command("start", (ctx) =>
+    ctx.reply("Telegram ACP ready. Send a message to chat with the AI agent.")
+  );
+  bot.command("help", (ctx) =>
+    ctx.reply("Send any message to chat with the AI agent. Commands: /start, /help, /status")
+  );
   bot.command("status", (ctx) => ctx.reply("Running."));
 
   // --- Layer 5: Message handler ---
@@ -105,7 +111,7 @@ async function messageHandler(ctx: Context) {
 
   // 1. Immediate feedback on receipt
   try {
-    await ctx.react('👀');
+    await ctx.react("👀");
   } catch {
     // Best-effort - don't block if fails
   }
@@ -116,7 +122,7 @@ async function messageHandler(ctx: Context) {
 
   // 3. Update reaction based on content type
   try {
-    await ctx.react(isMedia ? '⚡' : '🤔');
+    await ctx.react(isMedia ? "⚡" : "🤔");
   } catch {
     // Best-effort
   }
@@ -177,8 +183,7 @@ function extractPrompt(ctx: Context): string {
 
 function isMediaMessage(ctx: Context): boolean {
   const msg = ctx.message;
-  return !!msg?.photo || !!msg?.video || !!msg?.audio
-    || !!msg?.document || !!msg?.animation;
+  return !!msg?.photo || !!msg?.video || !!msg?.audio || !!msg?.document || !!msg?.animation;
 }
 
 function formatForTelegram(text: string): string {

@@ -115,7 +115,7 @@ export class SessionManager {
 
   private async spawnAgent(
     userId: string,
-    client: TelegramAcpClient,
+    client: TelegramAcpClient
   ): Promise<{ process: ChildProcess; connection: acp.ClientSideConnection; sessionId: string }> {
     const { agentCommand, agentArgs, agentCwd, agentEnv, log } = this.opts;
     const cmdLine = [agentCommand, ...agentArgs].join(" ");
