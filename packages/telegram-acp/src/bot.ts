@@ -119,6 +119,9 @@ export function createBot(
     const userId = ctx.from?.id.toString();
     if (!userId) return;
 
+    // Clear any pending history injection to avoid injecting stale history into new session
+    pendingHistoryInjection.delete(userId);
+
     await ctx.reply("Restarting session...");
 
     const acpCtx = ctx as AcpContext;
@@ -130,6 +133,9 @@ export function createBot(
   bot.command("clear", async (ctx) => {
     const userId = ctx.from?.id.toString();
     if (!userId) return;
+
+    // Clear any pending history injection to avoid re-injecting cleared history
+    pendingHistoryInjection.delete(userId);
 
     const acpCtx = ctx as AcpContext;
     await acpCtx.sessionManager.clearHistory(userId);
