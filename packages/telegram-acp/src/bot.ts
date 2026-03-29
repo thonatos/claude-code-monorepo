@@ -208,8 +208,16 @@ async function messageHandler(ctx: Context) {
   }
 
   // 2. Extract message content
-  const prompt = extractPrompt(ctx);
+  let prompt = extractPrompt(ctx);
   const isMedia = isMediaMessage(ctx);
+
+  // Inject history on first message after restoration
+  const historyToInject = pendingHistoryInjection.get(userId);
+  if (historyToInject && historyToInject.length > 0) {
+    pendingHistoryInjection.delete(userId); // One-time injection
+    const historyPrefix = buildHistoryContext(historyToInject);
+    prompt = historyPrefix + "\n\n[Current message]:\n" + prompt;
+  }
 
   // Record user message
   await acpCtx.sessionManager.recordMessage(userId, 'user', prompt);
