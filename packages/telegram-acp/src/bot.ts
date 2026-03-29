@@ -77,25 +77,19 @@ export function createBot(
     if (!userId) return;
 
     const acpCtx = ctx as AcpContext;
-    const stored = await acpCtx.sessionManager.getStorage().loadRestorable(userId);
 
-    if (stored) {
-      const restored = await acpCtx.sessionManager.restore(userId, stored);
-      acpCtx.session = restored.session;
+    // Session middleware already called getOrCreate(), which may have restored
+    // a persisted session. Just report the status.
+    const pendingHistory = pendingHistoryInjection.get(userId);
 
-      if (restored.hadHistory) {
-        pendingHistoryInjection.set(userId, restored.messages);
-      }
-
-      const msg = restored.hadHistory
-        ? `Session restored with ${restored.messages.length} previous messages.\nSession ID: ${stored.sessionId}`
-        : `Session restored (empty history).\nSession ID: ${stored.sessionId}`;
-
-      await ctx.reply(msg);
+    if (pendingHistory && pendingHistory.length > 0) {
+      await ctx.reply(
+        `Session restored with ${pendingHistory.length} previous messages.\nSession ID: ${acpCtx.session.sessionId}`
+      );
     } else {
-      const session = await acpCtx.sessionManager.getOrCreate(userId);
-      acpCtx.session = session;
-      await ctx.reply(`New session created.\nSession ID: ${session.sessionId}`);
+      await ctx.reply(
+        `Session ready.\nSession ID: ${acpCtx.session.sessionId}`
+      );
     }
   });
 
