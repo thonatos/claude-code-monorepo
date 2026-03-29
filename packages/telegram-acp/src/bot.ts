@@ -77,17 +77,25 @@ export function createBot(
     if (!userId) return;
 
     const acpCtx = ctx as AcpContext;
-    const session = await acpCtx.sessionManager.getOrCreate(userId);
     const stored = await acpCtx.sessionManager.getStorage().loadRestorable(userId);
 
     if (stored) {
-      await ctx.reply(
-        `Session restored.\nSession ID: ${stored.sessionId}\nMessages: ${stored.messages.length}`
-      );
+      const restored = await acpCtx.sessionManager.restore(userId, stored);
+      acpCtx.session = restored.session;
+
+      if (restored.hadHistory) {
+        pendingHistoryInjection.set(userId, restored.messages);
+      }
+
+      const msg = restored.hadHistory
+        ? `Session restored with ${restored.messages.length} previous messages.\nSession ID: ${stored.sessionId}`
+        : `Session restored (empty history).\nSession ID: ${stored.sessionId}`;
+
+      await ctx.reply(msg);
     } else {
-      await ctx.reply(
-        `New session created.\nSession ID: ${session.sessionId}`
-      );
+      const session = await acpCtx.sessionManager.getOrCreate(userId);
+      acpCtx.session = session;
+      await ctx.reply(`New session created.\nSession ID: ${session.sessionId}`);
     }
   });
 
