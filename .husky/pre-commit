@@ -1,2 +1,1 @@
-# Pre-commit hook - runs before each commit
-# Add your pre-commit checks here
+gitleaks protect --staged

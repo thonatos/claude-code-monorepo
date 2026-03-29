@@ -1,0 +1,13 @@
+title = "Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for known safe patterns in this project"
+paths = [
+  '''docs/superpowers/.*''',
+  '''README\.md''',
+  '''CLAUDE\.md''',
+  '''packages/telegram-acp/README\.md'''
+]
