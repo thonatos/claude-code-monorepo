@@ -2,7 +2,7 @@
  * Telegram bot setup: configuration, middleware, and message handling.
  */
 
-import { Bot, Context } from "grammy";
+import { Bot, Context, GrammyError } from "grammy";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { SessionManager, type UserSession } from "./session.ts";
 import type { TelegramAcpConfig } from "./config.ts";
@@ -310,16 +310,52 @@ function formatForTelegram(text: string): string {
 
 // --- Bot lifecycle ---
 export async function startBot(bot: Bot): Promise<void> {
-  // Register commands to Telegram UI menu
-  await bot.api.setMyCommands([
+  const COMMANDS = [
     { command: "start", description: "Create or restore session" },
     { command: "help", description: "Show available commands" },
     { command: "status", description: "Show session details" },
     { command: "restart", description: "Restart session" },
     { command: "clear", description: "Clear conversation history" },
-  ]);
+  ];
+  const SCOPE = { type: "all_private_chats" } as const;
 
-  await bot.start();
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await bot.start({
+        onStart: async (info) => {
+          process.stderr.write(`telegram channel: polling as @${info.username}\n`);
+          await bot.api.setMyCommands(COMMANDS, { scope: SCOPE });
+        },
+      });
+      return; // Clean exit (bot.stop() was called)
+    } catch (err) {
+      // 409 Conflict: another instance polling → retry with backoff
+      if (err instanceof GrammyError && err.error_code === 409) {
+        const delay = Math.min(1000 * attempt, 15000);
+        const detail = attempt === 1
+          ? " — another instance is polling"
+          : "";
+        process.stderr.write(
+          `telegram channel: 409 Conflict${detail}, retrying in ${delay / 1000}s\n`
+        );
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      // "Aborted delay": bot.stop() called mid-setup → clean exit
+      if (err instanceof Error && err.message === "Aborted delay") {
+        return;
+      }
+
+      // Other errors (including command registration failure) → stop and throw
+      try { await bot.stop(); } catch {}
+      throw err;
+    }
+  }
+
+  throw new Error(`Failed to start bot after ${maxAttempts} attempts`);
 }
 
 export async function stopBot(bot: Bot): Promise<void> {
