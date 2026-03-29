@@ -74,19 +74,25 @@ export class SessionStorage {
     }
   }
 
-  async loadActive(userId: string): Promise<StoredSession | null> {
+  async loadRestorable(userId: string): Promise<StoredSession | null> {
     const userDir = this.getUserDir(userId);
     try {
       const files = await fs.readdir(userDir);
+      const candidates: StoredSession[] = [];
+
       for (const file of files) {
         if (!file.endsWith('.json')) continue;
         const sessionId = file.replace('.json', '');
         const session = await this.load(userId, sessionId);
-        if (session && session.status === 'active') {
-          return session;
+        if (session && session.status !== 'terminated') {
+          candidates.push(session);
         }
       }
-      return null;
+
+      if (candidates.length === 0) return null;
+
+      // Return most recent by lastActivity
+      return candidates.sort((a, b) => b.lastActivity - a.lastActivity)[0];
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;

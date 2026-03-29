@@ -44,17 +44,33 @@ describe('SessionStorage', () => {
     expect(loaded?.status).toBe('active');
   });
 
-  it('should return active session from loadActive', async () => {
+  it('should return most recent non-terminated session from loadRestorable', async () => {
     const active = createTestSession('user123', 'active-session');
     const inactive = createTestSession('user123', 'inactive-session');
     inactive.status = 'inactive';
+    inactive.lastActivity = Date.now() + 1000; // More recent
+
+    const terminated = createTestSession('user123', 'terminated-session');
+    terminated.status = 'terminated';
+    terminated.lastActivity = Date.now() + 2000; // Most recent but terminated
 
     await storage.save(active);
     await storage.save(inactive);
+    await storage.save(terminated);
 
-    const loaded = await storage.loadActive('user123');
+    const loaded = await storage.loadRestorable('user123');
     expect(loaded).not.toBeNull();
-    expect(loaded?.sessionId).toBe('active-session');
+    // Should return inactive (most recent non-terminated)
+    expect(loaded?.sessionId).toBe('inactive-session');
+  });
+
+  it('should return null from loadRestorable when all sessions are terminated', async () => {
+    const terminated = createTestSession('user123', 'terminated-session');
+    terminated.status = 'terminated';
+    await storage.save(terminated);
+
+    const loaded = await storage.loadRestorable('user123');
+    expect(loaded).toBeNull();
   });
 
   it('should clear history', async () => {
