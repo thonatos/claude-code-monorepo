@@ -120,34 +120,6 @@ session:
 showThoughts: false
 ```
 
-## Workflow State
-
-任务状态记录在 `.claude/workflow-state.json`：
-
-```json
-{
-  "version": "1.0",
-  "tasks": [
-    {
-      "id": "task-YYYYMMDD-NNN",
-      "name": "任务名称",
-      "spec": "docs/superpowers/specs/xxx-design.md",
-      "plan": "docs/superpowers/plans/xxx.md",
-      "status": "plan_approved",
-      "files": ["path/to/file.ts"],
-      "createdAt": "ISO timestamp",
-      "approvedAt": "ISO timestamp or null"
-    }
-  ]
-}
-```
-
-**状态值：** `pending` → `spec_written` → `spec_approved` → `plan_written` → `plan_approved` → `completed`
-
-**修改规则：**
-- `docs/superpowers/**` - 可直接修改
-- 其他项目文件 - 需要 `plan_approved` 状态且文件在 `files` 列表中
-
 ## Notes
 
 - Requires Node.js 20+
