@@ -181,6 +181,9 @@ async function messageHandler(ctx: Context) {
   const prompt = extractPrompt(ctx);
   const isMedia = isMediaMessage(ctx);
 
+  // Record user message
+  await acpCtx.sessionManager.recordMessage(userId, 'user', prompt);
+
   // 3. Update reaction based on content type
   try {
     await ctx.react(isMedia ? "⚡" : "🤔");
@@ -212,6 +215,9 @@ async function messageHandler(ctx: Context) {
     } else if (result.stopReason === "refusal") {
       replyText += "\n[agent refused]";
     }
+
+    // Record agent reply
+    await acpCtx.sessionManager.recordMessage(userId, 'agent', replyText);
 
     // 5. Clear reaction + send reply
     try {
