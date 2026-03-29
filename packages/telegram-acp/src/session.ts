@@ -1,0 +1,215 @@
+/**
+ * Session lifecycle management: spawn agent, manage idle timeout, cleanup.
+ */
+
+import { spawn, type ChildProcess } from "node:child_process";
+import { Writable, Readable } from "node:stream";
+import * as acp from "@agentclientprotocol/sdk";
+import { TelegramAcpClient } from "./client.ts";
+import packageJson from "../package.json" with { type: "json" };
+import type { SessionConfig } from "./config.ts";
+
+export interface UserSession {
+  userId: string;
+  client: TelegramAcpClient;
+  connection: acp.ClientSideConnection;
+  sessionId: string;
+  process: ChildProcess;
+  lastActivity: number;
+}
+
+export interface SessionManagerOpts {
+  agentCommand: string;
+  agentArgs: string[];
+  agentCwd: string;
+  agentEnv?: Record<string, string>;
+  sessionConfig: SessionConfig;
+  showThoughts: boolean;
+  log: (msg: string) => void;
+  onReply: (userId: string, text: string) => Promise<void>;
+  sendTyping: (userId: string) => Promise<void>;
+}
+
+export class SessionManager {
+  private sessions = new Map<string, UserSession>();
+  private timers = new Map<string, NodeJS.Timeout>();
+  private opts: SessionManagerOpts;
+
+  constructor(opts: SessionManagerOpts) {
+    this.opts = opts;
+  }
+
+  /**
+   * Get existing session or create new one for user.
+   */
+  async getOrCreate(userId: string): Promise<UserSession> {
+    const existing = this.sessions.get(userId);
+    if (existing) {
+      existing.lastActivity = Date.now();
+      this.resetIdleTimer(userId);
+      return existing;
+    }
+
+    // Check capacity and evict if needed
+    if (this.sessions.size >= this.opts.sessionConfig.maxConcurrentUsers) {
+      this.evictOldest();
+    }
+
+    return this.create(userId);
+  }
+
+  /**
+   * Stop all sessions and cleanup.
+   */
+  async stop(): Promise<void> {
+    for (const [userId, session] of this.sessions) {
+      this.opts.log(`[session] Stopping for ${userId}`);
+      this.killAgent(session.process);
+    }
+    this.sessions.clear();
+
+    for (const timer of this.timers.values()) {
+      clearTimeout(timer);
+    }
+    this.timers.clear();
+  }
+
+  // --- Private methods ---
+
+  private async create(userId: string): Promise<UserSession> {
+    this.opts.log(`[session] Creating for ${userId}`);
+
+    const client = new TelegramAcpClient({
+      sendTyping: () => this.opts.sendTyping(userId),
+      onThoughtFlush: (text: string) => this.opts.onReply(userId, text),
+      log: (msg: string) => this.opts.log(`[${userId}] ${msg}`),
+      showThoughts: this.opts.showThoughts,
+    });
+
+    const { process, connection, sessionId } = await this.spawnAgent(userId, client);
+
+    const session: UserSession = {
+      userId,
+      client,
+      connection,
+      sessionId,
+      process,
+      lastActivity: Date.now(),
+    };
+
+    // Cleanup on process exit
+    process.on("exit", (code, signal) => {
+      this.opts.log(`[agent] ${userId} exited code=${code ?? "?"} signal=${signal ?? "?"}`);
+      const s = this.sessions.get(userId);
+      if (s && s.process === process) {
+        this.sessions.delete(userId);
+        this.timers.delete(userId);
+      }
+    });
+
+    this.sessions.set(userId, session);
+    this.resetIdleTimer(userId);
+
+    return session;
+  }
+
+  private async spawnAgent(
+    userId: string,
+    client: TelegramAcpClient,
+  ): Promise<{ process: ChildProcess; connection: acp.ClientSideConnection; sessionId: string }> {
+    const { agentCommand, agentArgs, agentCwd, agentEnv, log } = this.opts;
+    const cmdLine = [agentCommand, ...agentArgs].join(" ");
+    log(`[agent] Spawning for ${userId}: ${cmdLine}`);
+
+    const useShell = process.platform === "win32";
+    const proc = spawn(agentCommand, agentArgs, {
+      stdio: ["pipe", "pipe", "inherit"],
+      cwd: agentCwd,
+      env: { ...process.env, ...agentEnv },
+      shell: useShell,
+    });
+
+    proc.on("error", (err) => log(`[agent] Process error: ${String(err)}`));
+
+    if (!proc.stdin || !proc.stdout) {
+      proc.kill();
+      throw new Error("Failed to get agent process stdio");
+    }
+
+    const input = Writable.toWeb(proc.stdin);
+    const output = Readable.toWeb(proc.stdout) as ReadableStream<Uint8Array>;
+    const stream = acp.ndJsonStream(input, output);
+    const connection = new acp.ClientSideConnection(() => client, stream);
+
+    log("[acp] Initializing connection...");
+    const initResult = await connection.initialize({
+      protocolVersion: acp.PROTOCOL_VERSION,
+      clientInfo: {
+        name: packageJson.name,
+        title: packageJson.name,
+        version: packageJson.version,
+      },
+      clientCapabilities: {
+        fs: { readTextFile: true, writeTextFile: true },
+      },
+    });
+    log(`[acp] Initialized v${initResult.protocolVersion}`);
+
+    log("[acp] Creating session...");
+    const sessionResult = await connection.newSession({
+      cwd: agentCwd,
+      mcpServers: [],
+    });
+    log(`[acp] Session: ${sessionResult.sessionId}`);
+
+    return { process: proc, connection, sessionId: sessionResult.sessionId };
+  }
+
+  private killAgent(proc: ChildProcess): void {
+    if (!proc.killed) {
+      proc.kill("SIGTERM");
+      setTimeout(() => {
+        if (!proc.killed) proc.kill("SIGKILL");
+      }, 5000).unref();
+    }
+  }
+
+  private resetIdleTimer(userId: string): void {
+    if (this.opts.sessionConfig.idleTimeoutMs <= 0) return;
+
+    const existing = this.timers.get(userId);
+    if (existing) clearTimeout(existing);
+
+    const timer = setTimeout(() => {
+      this.opts.log(`[session] ${userId} idle, removing`);
+      const session = this.sessions.get(userId);
+      if (session) {
+        this.killAgent(session.process);
+        this.sessions.delete(userId);
+      }
+      this.timers.delete(userId);
+    }, this.opts.sessionConfig.idleTimeoutMs);
+
+    this.timers.set(userId, timer);
+  }
+
+  private evictOldest(): void {
+    let oldest: { userId: string; lastActivity: number } | null = null;
+
+    for (const [userId, session] of this.sessions) {
+      if (!oldest || session.lastActivity < oldest.lastActivity) {
+        oldest = { userId, lastActivity: session.lastActivity };
+      }
+    }
+
+    if (oldest) {
+      this.opts.log(`[session] Evicting oldest: ${oldest.userId}`);
+      const session = this.sessions.get(oldest.userId);
+      if (session) {
+        this.killAgent(session.process);
+        this.sessions.delete(oldest.userId);
+        this.timers.delete(oldest.userId);
+      }
+    }
+  }
+}
