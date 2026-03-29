@@ -84,11 +84,16 @@ export function createBot(
 
     if (pendingHistory && pendingHistory.length > 0) {
       await ctx.reply(
-        `Session restored with ${pendingHistory.length} previous messages.\nSession ID: ${acpCtx.session.sessionId}`
+        `<b>Session restored</b>\n` +
+        `Messages: <code>${pendingHistory.length}</code>\n` +
+        `Session ID: <code>${acpCtx.session.sessionId}</code>`,
+        { parse_mode: "HTML" }
       );
     } else {
       await ctx.reply(
-        `Session ready.\nSession ID: ${acpCtx.session.sessionId}`
+        `<b>Session ready</b>\n` +
+        `Session ID: <code>${acpCtx.session.sessionId}</code>`,
+        { parse_mode: "HTML" }
       );
     }
   });
@@ -101,19 +106,21 @@ export function createBot(
     const stored = await acpCtx.sessionManager.getStorage().loadRestorable(userId);
 
     if (!stored) {
-      await ctx.reply("No active session.");
+      await ctx.reply("<b>No active session</b>", { parse_mode: "HTML" });
       return;
     }
 
     const formatDate = (ts: number) => new Date(ts).toLocaleString();
 
     await ctx.reply(
-      `Session ID: ${stored.sessionId}\n` +
-      `Created: ${formatDate(stored.createdAt)}\n` +
-      `Last Activity: ${formatDate(stored.lastActivity)}\n` +
-      `Messages: ${stored.messages.length}\n` +
-      `Agent: ${stored.agentConfig.preset ?? stored.agentConfig.command}\n` +
-      `Status: ${stored.status}`
+      `<b>Session Status</b>\n\n` +
+      `<b>ID:</b> <code>${stored.sessionId}</code>\n` +
+      `<b>Created:</b> ${formatDate(stored.createdAt)}\n` +
+      `<b>Last Activity:</b> ${formatDate(stored.lastActivity)}\n` +
+      `<b>Messages:</b> <code>${stored.messages.length}</code>\n` +
+      `<b>Agent:</b> <code>${stored.agentConfig.preset ?? stored.agentConfig.command}</code>\n` +
+      `<b>Status:</b> <code>${stored.status}</code>`,
+      { parse_mode: "HTML" }
     );
   });
 
@@ -124,12 +131,16 @@ export function createBot(
     // Clear any pending history injection to avoid injecting stale history into new session
     pendingHistoryInjection.delete(userId);
 
-    await ctx.reply("Restarting session...");
+    await ctx.reply("<b>Restarting session...</b>", { parse_mode: "HTML" });
 
     const acpCtx = ctx as AcpContext;
     const session = await acpCtx.sessionManager.restart(userId);
 
-    await ctx.reply(`New session created.\nSession ID: ${session.sessionId}`);
+    await ctx.reply(
+      `<b>New session created</b>\n` +
+      `Session ID: <code>${session.sessionId}</code>`,
+      { parse_mode: "HTML" }
+    );
   });
 
   bot.command("clear", async (ctx) => {
@@ -142,11 +153,21 @@ export function createBot(
     const acpCtx = ctx as AcpContext;
     await acpCtx.sessionManager.clearHistory(userId);
 
-    await ctx.reply("History cleared.");
+    await ctx.reply("<b>History cleared</b>", { parse_mode: "HTML" });
   });
 
   bot.command("help", (ctx) =>
-    ctx.reply("Send any message to chat with the AI agent.\nCommands: /start, /help, /status, /restart, /clear")
+    ctx.reply(
+      `<b>Telegram ACP Bot</b>\n\n` +
+      `Send any message to chat with the AI agent.\n\n` +
+      `<b>Commands:</b>\n` +
+      `<code>/start</code> - Create or restore session\n` +
+      `<code>/help</code> - Show this help\n` +
+      `<code>/status</code> - Show session details\n` +
+      `<code>/restart</code> - Restart session\n` +
+      `<code>/clear</code> - Clear conversation history`,
+      { parse_mode: "HTML" }
+    )
   );
 
   // --- Layer 5: Message handler ---
