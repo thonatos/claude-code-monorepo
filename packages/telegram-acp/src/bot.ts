@@ -173,6 +173,15 @@ function sessionMiddleware(sessionManager: SessionManager) {
     const userId = ctx.from?.id.toString();
     if (!userId) return;
 
+    // Check if history injection already pending (from /start)
+    if (!pendingHistoryInjection.has(userId)) {
+      const stored = await sessionManager.getStorage().loadRestorable(userId);
+      if (stored && stored.messages.length > 0) {
+        // Track history for injection on first message
+        pendingHistoryInjection.set(userId, stored.messages);
+      }
+    }
+
     const session = await sessionManager.getOrCreate(userId);
 
     const acpCtx = ctx as AcpContext;
