@@ -24,34 +24,46 @@ claude-code-monorepo/
 
 ## Quick Start
 
-1. Get a Telegram bot token from @BotFather
-2. Create config file:
+### 开发模式
 
-```bash
-mkdir -p ~/.telegram-acp
-cat > ~/.telegram-acp/config.yaml << 'EOF'
-telegram:
-  botToken: "YOUR_BOT_TOKEN"
-agent:
-  preset: claude
-EOF
-```
-
-3. Install and run:
+在项目目录内开发运行：
 
 ```bash
 pnpm install
 pnpm --filter telegram-acp run build
-npx telegram-acp --preset claude
+pnpm --filter telegram-acp run start -- --preset claude
+```
+
+### 安装后使用
+
+全局安装后可在任意目录运行：
+
+```bash
+# 构建并链接
+cd packages/telegram-acp
+pnpm run build
+pnpm link --global
+
+# 在任意目录运行
+pnpx telegram-acp --preset claude
 ```
 
 ## CLI Commands
 
+开发模式：
+
 ```bash
-npx telegram-acp --preset <name>    # Start with preset
-npx telegram-acp --config <file>    # Start with config file
-npx telegram-acp agents             # List available presets
-npx telegram-acp                    # Start with default config
+pnpm --filter telegram-acp run start -- --preset <name>    # 使用预设
+pnpm --filter telegram-acp run start -- --config <file>    # 使用配置文件
+pnpm --filter telegram-acp run start -- agents             # 列出可用预设
+```
+
+安装后：
+
+```bash
+pnpx telegram-acp --preset <name>    # 使用预设
+pnpx telegram-acp --config <file>    # 使用配置文件
+pnpx telegram-acp agents             # 列出可用预设
 ```
 
 ### Built-in Presets
