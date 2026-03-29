@@ -83,6 +83,48 @@ export class SessionManager {
     this.timers.clear();
   }
 
+  /**
+   * Record a message to session storage.
+   */
+  async recordMessage(userId: string, role: 'user' | 'agent', content: string): Promise<void> {
+    const stored = await this.storage.loadActive(userId);
+    if (!stored) return;
+
+    const message: StoredMessage = {
+      role,
+      content,
+      timestamp: Date.now(),
+    };
+    stored.messages.push(message);
+
+    // Apply history limits
+    this.applyHistoryLimits(stored);
+
+    stored.lastActivity = Date.now();
+    await this.storage.save(stored);
+  }
+
+  /**
+   * Buffer a reply for later flushing.
+   */
+  bufferReply(userId: string, text: string): void {
+    const buffer = this.pendingReplies.get(userId) || [];
+    buffer.push(text);
+    this.pendingReplies.set(userId, buffer);
+  }
+
+  /**
+   * Flush buffered replies and record as agent message.
+   */
+  async flushAndRecord(userId: string): Promise<void> {
+    const buffer = this.pendingReplies.get(userId);
+    if (buffer && buffer.length > 0) {
+      const fullText = buffer.join('\n');
+      await this.recordMessage(userId, 'agent', fullText);
+      this.pendingReplies.delete(userId);
+    }
+  }
+
   // --- Private methods ---
 
   private async create(userId: string): Promise<UserSession> {
@@ -219,6 +261,21 @@ export class SessionManager {
         this.sessions.delete(oldest.userId);
         this.timers.delete(oldest.userId);
       }
+    }
+  }
+
+  private applyHistoryLimits(session: StoredSession): void {
+    const { maxMessages, maxDays } = this.opts.historyConfig;
+
+    // Limit by message count
+    if (maxMessages !== null && session.messages.length > maxMessages) {
+      session.messages = session.messages.slice(-maxMessages);
+    }
+
+    // Limit by days
+    if (maxDays !== null) {
+      const cutoff = Date.now() - maxDays * 24 * 60 * 60 * 1000;
+      session.messages = session.messages.filter(m => m.timestamp >= cutoff);
     }
   }
 }
