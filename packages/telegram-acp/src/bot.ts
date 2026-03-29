@@ -270,7 +270,17 @@ async function messageHandler(ctx: Context) {
       await ctx.react([]); // Clear reaction
     } catch {}
     if (replyText.trim()) {
-      await ctx.reply(formatForTelegram(replyText));
+      const formatted = formatForTelegram(replyText);
+      try {
+        await ctx.reply(formatted, { parse_mode: "HTML" });
+      } catch (err) {
+        // Fallback to plain text on parse error
+        if (err instanceof GrammyError && err.description?.includes("Cannot parse entities")) {
+          await ctx.reply(replyText);
+        } else {
+          throw err;
+        }
+      }
     }
   } catch (err) {
     try {
