@@ -95,4 +95,58 @@ export class SessionStorage {
       return null;
     }
   }
+
+  async list(userId: string): Promise<StoredSession[]> {
+    const userDir = this.getUserDir(userId);
+    try {
+      const files = await fs.readdir(userDir);
+      const sessions: StoredSession[] = [];
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        const sessionId = file.replace('.json', '');
+        const session = await this.load(userId, sessionId);
+        if (session) {
+          sessions.push(session);
+        }
+      }
+      return sessions.sort((a, b) => b.lastActivity - a.lastActivity);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        return [];
+      }
+      console.error(`[storage] Failed to list sessions for ${userId}: ${String(err)}`);
+      return [];
+    }
+  }
+
+  async updateStatus(userId: string, sessionId: string, status: SessionStatus): Promise<void> {
+    const session = await this.load(userId, sessionId);
+    if (session) {
+      session.status = status;
+      await this.save(session);
+    }
+  }
+
+  async clearHistory(userId: string, sessionId: string): Promise<void> {
+    const session = await this.load(userId, sessionId);
+    if (session) {
+      session.messages = [];
+      await this.save(session);
+    }
+  }
+
+  async markTerminated(userId: string, sessionId: string): Promise<void> {
+    await this.updateStatus(userId, sessionId, 'terminated');
+  }
+
+  async delete(userId: string, sessionId: string): Promise<void> {
+    const filePath = this.getFilePath(userId, sessionId);
+    try {
+      await fs.unlink(filePath);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+        console.error(`[storage] Failed to delete ${filePath}: ${String(err)}`);
+      }
+    }
+  }
 }
