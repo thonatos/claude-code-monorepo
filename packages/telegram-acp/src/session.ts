@@ -7,7 +7,8 @@ import { Writable, Readable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import { TelegramAcpClient } from "./client.ts";
 import packageJson from "../package.json" with { type: "json" };
-import type { SessionConfig } from "./config.ts";
+import type { SessionConfig, HistoryConfig } from "./config.ts";
+import { SessionStorage, type StoredSession, type StoredMessage } from "./storage.ts";
 
 export interface UserSession {
   userId: string;
@@ -19,11 +20,13 @@ export interface UserSession {
 }
 
 export interface SessionManagerOpts {
+  agentPreset?: string;
   agentCommand: string;
   agentArgs: string[];
   agentCwd: string;
   agentEnv?: Record<string, string>;
   sessionConfig: SessionConfig;
+  historyConfig: HistoryConfig;
   showThoughts: boolean;
   log: (msg: string) => void;
   onReply: (userId: string, text: string) => Promise<void>;
@@ -34,9 +37,16 @@ export class SessionManager {
   private sessions = new Map<string, UserSession>();
   private timers = new Map<string, NodeJS.Timeout>();
   private opts: SessionManagerOpts;
+  private storage: SessionStorage;
+  private pendingReplies = new Map<string, string[]>();
 
   constructor(opts: SessionManagerOpts) {
     this.opts = opts;
+    this.storage = new SessionStorage();
+  }
+
+  getStorage(): SessionStorage {
+    return this.storage;
   }
 
   /**
@@ -48,6 +58,13 @@ export class SessionManager {
       existing.lastActivity = Date.now();
       this.resetIdleTimer(userId);
       return existing;
+    }
+
+    // Try to restore persisted session
+    const stored = await this.storage.loadActive(userId);
+    if (stored) {
+      this.opts.log(`[session] Restoring persisted session for ${userId}`);
+      return this.restore(userId, stored);
     }
 
     // Check capacity and evict if needed
@@ -62,6 +79,12 @@ export class SessionManager {
    * Stop all sessions and cleanup.
    */
   async stop(): Promise<void> {
+    // Mark all active sessions as inactive
+    for (const [userId, session] of this.sessions) {
+      await this.storage.updateStatus(userId, session.sessionId, 'inactive');
+    }
+
+    // Existing cleanup...
     for (const [userId, session] of this.sessions) {
       this.opts.log(`[session] Stopping for ${userId}`);
       this.killAgent(session.process);
@@ -72,6 +95,76 @@ export class SessionManager {
       clearTimeout(timer);
     }
     this.timers.clear();
+  }
+
+  /**
+   * Record a message to session storage.
+   */
+  async recordMessage(userId: string, role: 'user' | 'agent', content: string): Promise<void> {
+    const stored = await this.storage.loadActive(userId);
+    if (!stored) return;
+
+    const message: StoredMessage = {
+      role,
+      content,
+      timestamp: Date.now(),
+    };
+    stored.messages.push(message);
+
+    // Apply history limits
+    this.applyHistoryLimits(stored);
+
+    stored.lastActivity = Date.now();
+    await this.storage.save(stored);
+  }
+
+  /**
+   * Buffer a reply for later flushing.
+   */
+  bufferReply(userId: string, text: string): void {
+    const buffer = this.pendingReplies.get(userId) || [];
+    buffer.push(text);
+    this.pendingReplies.set(userId, buffer);
+  }
+
+  /**
+   * Flush buffered replies and record as agent message.
+   */
+  async flushAndRecord(userId: string): Promise<void> {
+    const buffer = this.pendingReplies.get(userId);
+    if (buffer && buffer.length > 0) {
+      const fullText = buffer.join('\n');
+      await this.recordMessage(userId, 'agent', fullText);
+      this.pendingReplies.delete(userId);
+    }
+  }
+
+  /**
+   * Restart session for user (terminate existing, create new).
+   */
+  async restart(userId: string): Promise<UserSession> {
+    const existing = this.sessions.get(userId);
+    if (existing) {
+      // Mark old session as terminated
+      await this.storage.markTerminated(userId, existing.sessionId);
+      this.killAgent(existing.process);
+      this.sessions.delete(userId);
+      this.timers.delete(userId);
+      this.opts.log(`[session] Terminated session for ${userId}`);
+    }
+
+    return this.create(userId);
+  }
+
+  /**
+   * Clear history for user's current session.
+   */
+  async clearHistory(userId: string): Promise<void> {
+    const session = this.sessions.get(userId);
+    if (session) {
+      await this.storage.clearHistory(userId, session.sessionId);
+      this.opts.log(`[session] Cleared history for ${userId}`);
+    }
   }
 
   // --- Private methods ---
@@ -97,9 +190,71 @@ export class SessionManager {
       lastActivity: Date.now(),
     };
 
+    // Persist session metadata
+    const stored: StoredSession = {
+      userId,
+      sessionId,
+      agentConfig: {
+        preset: this.opts.agentPreset,
+        command: this.opts.agentCommand,
+        args: this.opts.agentArgs,
+        cwd: this.opts.agentCwd,
+      },
+      createdAt: Date.now(),
+      lastActivity: Date.now(),
+      status: 'active',
+      messages: [],
+    };
+    await this.storage.save(stored);
+
     // Cleanup on process exit
     process.on("exit", (code, signal) => {
       this.opts.log(`[agent] ${userId} exited code=${code ?? "?"} signal=${signal ?? "?"}`);
+      const s = this.sessions.get(userId);
+      if (s && s.process === process) {
+        this.sessions.delete(userId);
+        this.timers.delete(userId);
+      }
+    });
+
+    this.sessions.set(userId, session);
+    this.resetIdleTimer(userId);
+
+    return session;
+  }
+
+  async restore(userId: string, stored: StoredSession): Promise<UserSession> {
+    this.opts.log(`[session] Restoring for ${userId} (sessionId: ${stored.sessionId})`);
+
+    const client = new TelegramAcpClient({
+      sendTyping: () => this.opts.sendTyping(userId),
+      onThoughtFlush: async (text: string) => {
+        this.bufferReply(userId, text);
+        await this.opts.onReply(userId, text);
+      },
+      log: (msg: string) => this.opts.log(`[${userId}] ${msg}`),
+      showThoughts: this.opts.showThoughts,
+    });
+
+    const { process, connection, sessionId } = await this.spawnAgent(userId, client);
+
+    // Update stored session with new sessionId
+    stored.sessionId = sessionId;
+    stored.lastActivity = Date.now();
+    stored.status = 'active';
+    await this.storage.save(stored);
+
+    const session: UserSession = {
+      userId,
+      client,
+      connection,
+      sessionId,
+      process,
+      lastActivity: Date.now(),
+    };
+
+    process.on('exit', (code, signal) => {
+      this.opts.log(`[agent] ${userId} exited code=${code ?? '?'} signal=${signal ?? '?'}`);
       const s = this.sessions.get(userId);
       if (s && s.process === process) {
         this.sessions.delete(userId);
@@ -210,6 +365,21 @@ export class SessionManager {
         this.sessions.delete(oldest.userId);
         this.timers.delete(oldest.userId);
       }
+    }
+  }
+
+  private applyHistoryLimits(session: StoredSession): void {
+    const { maxMessages, maxDays } = this.opts.historyConfig;
+
+    // Limit by message count
+    if (maxMessages !== null && session.messages.length > maxMessages) {
+      session.messages = session.messages.slice(-maxMessages);
+    }
+
+    // Limit by days
+    if (maxDays !== null) {
+      const cutoff = Date.now() - maxDays * 24 * 60 * 60 * 1000;
+      session.messages = session.messages.filter(m => m.timestamp >= cutoff);
     }
   }
 }

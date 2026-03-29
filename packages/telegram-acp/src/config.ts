@@ -19,6 +19,11 @@ export interface SessionConfig {
   maxConcurrentUsers: number;
 }
 
+export interface HistoryConfig {
+  maxMessages: number | null;   // null = unlimited
+  maxDays: number | null;       // null = unlimited
+}
+
 export interface ReactionConfig {
   enabled: boolean;
   emoji?: string;
@@ -40,6 +45,7 @@ export interface TelegramAcpConfig {
   open?: boolean;
   reaction: ReactionConfig;
   session: SessionConfig;
+  history: HistoryConfig;
   log?: (msg: string) => void;
 }
 
@@ -86,6 +92,10 @@ export function defaultConfig(): TelegramAcpConfig {
       idleTimeoutMs: 1440 * 60_000, // 24 hours
       maxConcurrentUsers: 10,
     },
+    history: {
+      maxMessages: null,
+      maxDays: null,
+    },
     log: undefined,
   };
 }
@@ -130,6 +140,10 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
           fileConfig.session.idleTimeoutMs ?? config.session.idleTimeoutMs;
         config.session.maxConcurrentUsers =
           fileConfig.session.maxConcurrentUsers ?? config.session.maxConcurrentUsers;
+      }
+      if (fileConfig.history) {
+        config.history.maxMessages = fileConfig.history.maxMessages ?? config.history.maxMessages;
+        config.history.maxDays = fileConfig.history.maxDays ?? config.history.maxDays;
       }
       if (fileConfig.reaction) config.reaction = fileConfig.reaction;
 

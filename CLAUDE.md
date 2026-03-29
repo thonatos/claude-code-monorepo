@@ -75,6 +75,7 @@ packages/telegram-acp/
 │   ├── bot.ts                # grammy Bot setup, middleware, handlers
 │   ├── client.ts             # ACP Client implementation
 │   ├── session.ts            # Per-user session lifecycle, agent spawning
+│   ├── storage.ts            # Session persistence (file I/O)
 │   └── config.ts             # Config loading, presets, defaults
 ```
 
@@ -87,8 +88,21 @@ packages/telegram-acp/
 **Middleware chain (in bot.ts):**
 - Auth: whitelist check or open mode
 - Session: inject UserSession into context
-- Commands: /start, /help, /status
+- Commands: /start, /help, /status, /restart, /clear
 - Messages: forward to ACP agent
+
+## Session Persistence
+
+Sessions are persisted to `~/.telegram-acp/sessions/{userId}/{sessionId}.json`:
+- Session metadata (agent config, timestamps, status)
+- Conversation history (user prompts + agent replies)
+- Automatic restoration on service restart
+
+**Commands:**
+- `/start` - Create new session or restore existing one
+- `/status` - Show session details (ID, messages, timestamps)
+- `/restart` - Terminate current session and create new one
+- `/clear` - Clear conversation history
 
 ## Configuration
 
@@ -116,6 +130,10 @@ reaction:
 session:
   idleTimeoutMs: 86400000
   maxConcurrentUsers: 10
+
+history:
+  maxMessages: null  # null = unlimited
+  maxDays: null      # null = unlimited
 
 showThoughts: false
 ```

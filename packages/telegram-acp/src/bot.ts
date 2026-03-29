@@ -51,13 +51,74 @@ export function createBot(
   bot.use(sessionMiddleware(sessionManager));
 
   // --- Layer 4: Command handlers (must be before message handler) ---
-  bot.command("start", (ctx) =>
-    ctx.reply("Telegram ACP ready. Send a message to chat with the AI agent.")
-  );
+  bot.command("start", async (ctx) => {
+    const userId = ctx.from?.id.toString();
+    if (!userId) return;
+
+    const acpCtx = ctx as AcpContext;
+    const session = await acpCtx.sessionManager.getOrCreate(userId);
+    const stored = await acpCtx.sessionManager.getStorage().loadActive(userId);
+
+    if (stored) {
+      await ctx.reply(
+        `Session restored.\nSession ID: ${stored.sessionId}\nMessages: ${stored.messages.length}`
+      );
+    } else {
+      await ctx.reply(
+        `New session created.\nSession ID: ${session.sessionId}`
+      );
+    }
+  });
+
+  bot.command("status", async (ctx) => {
+    const userId = ctx.from?.id.toString();
+    if (!userId) return;
+
+    const acpCtx = ctx as AcpContext;
+    const stored = await acpCtx.sessionManager.getStorage().loadActive(userId);
+
+    if (!stored) {
+      await ctx.reply("No active session.");
+      return;
+    }
+
+    const formatDate = (ts: number) => new Date(ts).toLocaleString();
+
+    await ctx.reply(
+      `Session ID: ${stored.sessionId}\n` +
+      `Created: ${formatDate(stored.createdAt)}\n` +
+      `Last Activity: ${formatDate(stored.lastActivity)}\n` +
+      `Messages: ${stored.messages.length}\n` +
+      `Agent: ${stored.agentConfig.preset ?? stored.agentConfig.command}\n` +
+      `Status: ${stored.status}`
+    );
+  });
+
+  bot.command("restart", async (ctx) => {
+    const userId = ctx.from?.id.toString();
+    if (!userId) return;
+
+    await ctx.reply("Restarting session...");
+
+    const acpCtx = ctx as AcpContext;
+    const session = await acpCtx.sessionManager.restart(userId);
+
+    await ctx.reply(`New session created.\nSession ID: ${session.sessionId}`);
+  });
+
+  bot.command("clear", async (ctx) => {
+    const userId = ctx.from?.id.toString();
+    if (!userId) return;
+
+    const acpCtx = ctx as AcpContext;
+    await acpCtx.sessionManager.clearHistory(userId);
+
+    await ctx.reply("History cleared.");
+  });
+
   bot.command("help", (ctx) =>
-    ctx.reply("Send any message to chat with the AI agent. Commands: /start, /help, /status")
+    ctx.reply("Send any message to chat with the AI agent.\nCommands: /start, /help, /status, /restart, /clear")
   );
-  bot.command("status", (ctx) => ctx.reply("Running."));
 
   // --- Layer 5: Message handler ---
   bot.on("message", messageHandler);
@@ -120,6 +181,9 @@ async function messageHandler(ctx: Context) {
   const prompt = extractPrompt(ctx);
   const isMedia = isMediaMessage(ctx);
 
+  // Record user message
+  await acpCtx.sessionManager.recordMessage(userId, 'user', prompt);
+
   // 3. Update reaction based on content type
   try {
     await ctx.react(isMedia ? "⚡" : "🤔");
@@ -151,6 +215,9 @@ async function messageHandler(ctx: Context) {
     } else if (result.stopReason === "refusal") {
       replyText += "\n[agent refused]";
     }
+
+    // Record agent reply
+    await acpCtx.sessionManager.recordMessage(userId, 'agent', replyText);
 
     // 5. Clear reaction + send reply
     try {

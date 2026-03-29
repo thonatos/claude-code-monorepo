@@ -2,9 +2,12 @@
  * TelegramAcpBridge — orchestration layer.
  */
 
+import path from "node:path";
+import fs from "node:fs";
 import { createBot, startBot, stopBot, type Bot } from "./bot.ts";
 import { SessionManager } from "./session.ts";
 import type { TelegramAcpConfig } from "./config.ts";
+import { defaultStorageDir } from "./config.ts";
 
 export class TelegramAcpBridge {
   private config: TelegramAcpConfig;
@@ -27,7 +30,9 @@ export class TelegramAcpBridge {
       agentArgs: this.config.agent.args,
       agentCwd: this.config.agent.cwd,
       agentEnv: this.config.agent.env,
+      agentPreset: this.config.agent.preset,
       sessionConfig: this.config.session,
+      historyConfig: this.config.history,
       showThoughts: this.config.agent.showThoughts,
       log: this.log,
       onReply: async (userId: string, text: string) => {
@@ -41,6 +46,9 @@ export class TelegramAcpBridge {
         }
       },
     });
+
+    // Restore persisted sessions
+    await this.restorePersistedSessions();
 
     // Create and start bot
     this.bot = createBot(this.config.telegram.botToken, this.config, this.sessionManager);
@@ -74,5 +82,26 @@ export class TelegramAcpBridge {
       username: me.username || "",
       firstName: me.first_name || undefined,
     };
+  }
+
+  private async restorePersistedSessions(): Promise<void> {
+    const sessionsDir = path.join(defaultStorageDir(), 'sessions');
+    if (!fs.existsSync(sessionsDir)) return;
+
+    const userDirs = fs.readdirSync(sessionsDir);
+    for (const userId of userDirs) {
+      const userPath = path.join(sessionsDir, userId);
+      if (!fs.statSync(userPath).isDirectory()) continue;
+
+      const stored = await this.sessionManager!.getStorage().loadActive(userId);
+      if (stored && stored.status === 'active') {
+        this.log(`[restore] Restoring session for ${userId}`);
+        try {
+          await this.sessionManager!.restore(userId, stored);
+        } catch (err) {
+          this.log(`[restore] Failed to restore ${userId}: ${String(err)}`);
+        }
+      }
+    }
   }
 }
