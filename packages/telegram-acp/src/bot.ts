@@ -264,6 +264,15 @@ function formatForTelegram(text: string): string {
 
 // --- Bot lifecycle ---
 export async function startBot(bot: Bot): Promise<void> {
+  // Register commands to Telegram UI menu
+  await bot.api.setMyCommands([
+    { command: "start", description: "Create or restore session" },
+    { command: "help", description: "Show available commands" },
+    { command: "status", description: "Show session details" },
+    { command: "restart", description: "Restart session" },
+    { command: "clear", description: "Clear conversation history" },
+  ]);
+
   await bot.start();
 }
 
