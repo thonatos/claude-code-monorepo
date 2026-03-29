@@ -19,6 +19,12 @@ export interface UserSession {
   lastActivity: number;
 }
 
+export interface RestoredSession {
+  session: UserSession;
+  hadHistory: boolean;
+  messages: StoredMessage[];
+}
+
 export interface SessionManagerOpts {
   agentPreset?: string;
   agentCommand: string;
@@ -64,7 +70,8 @@ export class SessionManager {
     const stored = await this.storage.loadRestorable(userId);
     if (stored) {
       this.opts.log(`[session] Restoring persisted session for ${userId}`);
-      return this.restore(userId, stored);
+      const restored = await this.restore(userId, stored);
+      return restored.session;
     }
 
     // Check capacity and evict if needed
@@ -223,7 +230,7 @@ export class SessionManager {
     return session;
   }
 
-  async restore(userId: string, stored: StoredSession): Promise<UserSession> {
+  async restore(userId: string, stored: StoredSession): Promise<RestoredSession> {
     this.opts.log(`[session] Restoring for ${userId} (sessionId: ${stored.sessionId})`);
 
     const client = new TelegramAcpClient({
@@ -265,7 +272,11 @@ export class SessionManager {
     this.sessions.set(userId, session);
     this.resetIdleTimer(userId);
 
-    return session;
+    return {
+      session,
+      hadHistory: stored.messages.length > 0,
+      messages: stored.messages,
+    };
   }
 
   private async spawnAgent(
