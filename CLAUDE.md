@@ -44,11 +44,20 @@ pnpm run start     # Run compiled CLI
 
 ### CLI Commands
 
+开发模式：
+
 ```bash
-npx telegram-acp --preset <name>    # Start with preset
-npx telegram-acp --config <file>    # Start with config file
-npx telegram-acp agents             # List available presets
-npx telegram-acp                    # Start with default config
+pnpm --filter telegram-acp run start -- --preset <name>
+pnpm --filter telegram-acp run start -- --config <file>
+pnpm --filter telegram-acp run start -- agents
+```
+
+安装后：
+
+```bash
+pnpx telegram-acp --preset <name>
+pnpx telegram-acp --config <file>
+pnpx telegram-acp agents
 ```
 
 ### Built-in Agent Presets
