@@ -14,6 +14,7 @@ export class TelegramAcpBridge {
   private bot: Bot | null = null;
   private sessionManager: SessionManager | null = null;
   private log: (msg: string) => void;
+  private stopping = false;
 
   constructor(config: TelegramAcpConfig) {
     this.config = config;
@@ -59,6 +60,9 @@ export class TelegramAcpBridge {
   }
 
   async stop(): Promise<void> {
+    if (this.stopping) return;
+    this.stopping = true;
+
     this.log("[telegram-acp] Stopping...");
 
     if (this.sessionManager) {
