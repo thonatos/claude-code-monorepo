@@ -20,6 +20,7 @@ export interface UserSession {
 }
 
 export interface SessionManagerOpts {
+  agentPreset?: string;
   agentCommand: string;
   agentArgs: string[];
   agentCwd: string;
@@ -78,6 +79,12 @@ export class SessionManager {
    * Stop all sessions and cleanup.
    */
   async stop(): Promise<void> {
+    // Mark all active sessions as inactive
+    for (const [userId, session] of this.sessions) {
+      await this.storage.updateStatus(userId, session.sessionId, 'inactive');
+    }
+
+    // Existing cleanup...
     for (const [userId, session] of this.sessions) {
       this.opts.log(`[session] Stopping for ${userId}`);
       this.killAgent(session.process);
@@ -182,6 +189,23 @@ export class SessionManager {
       process,
       lastActivity: Date.now(),
     };
+
+    // Persist session metadata
+    const stored: StoredSession = {
+      userId,
+      sessionId,
+      agentConfig: {
+        preset: this.opts.agentPreset,
+        command: this.opts.agentCommand,
+        args: this.opts.agentArgs,
+        cwd: this.opts.agentCwd,
+      },
+      createdAt: Date.now(),
+      lastActivity: Date.now(),
+      status: 'active',
+      messages: [],
+    };
+    await this.storage.save(stored);
 
     // Cleanup on process exit
     process.on("exit", (code, signal) => {
