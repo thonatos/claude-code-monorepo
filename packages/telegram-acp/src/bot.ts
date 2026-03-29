@@ -7,6 +7,10 @@ import { SocksProxyAgent } from "socks-proxy-agent";
 import { SessionManager, type UserSession } from "./session.ts";
 import type { TelegramAcpConfig } from "./config.ts";
 import type * as acp from "@agentclientprotocol/sdk";
+import { SessionStorage, type StoredSession, type StoredMessage } from "./storage.ts";
+
+// Map userId -> messages to inject on first user message after restoration
+const pendingHistoryInjection = new Map<string, StoredMessage[]>();
 
 // Extended context with ACP session
 interface AcpContext extends Context {
@@ -15,6 +19,23 @@ interface AcpContext extends Context {
 }
 
 export type { Bot };
+
+/**
+ * Build a formatted context string from stored messages for history injection.
+ * Truncates long messages to prevent context explosion.
+ */
+function buildHistoryContext(messages: StoredMessage[]): string {
+  const lines = ["[Previous conversation context]:"];
+  for (const msg of messages) {
+    const role = msg.role === 'user' ? 'User' : 'Assistant';
+    // Truncate very long messages to prevent context explosion
+    const content = msg.content.length > 2000
+      ? msg.content.slice(0, 2000) + '...'
+      : msg.content;
+    lines.push(`${role}: ${content}`);
+  }
+  return lines.join('\n');
+}
 
 /**
  * Create configured bot with auth, session middleware, and handlers.
