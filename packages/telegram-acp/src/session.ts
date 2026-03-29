@@ -61,7 +61,7 @@ export class SessionManager {
     }
 
     // Try to restore persisted session
-    const stored = await this.storage.loadActive(userId);
+    const stored = await this.storage.loadRestorable(userId);
     if (stored) {
       this.opts.log(`[session] Restoring persisted session for ${userId}`);
       return this.restore(userId, stored);
@@ -101,7 +101,7 @@ export class SessionManager {
    * Record a message to session storage.
    */
   async recordMessage(userId: string, role: 'user' | 'agent', content: string): Promise<void> {
-    const stored = await this.storage.loadActive(userId);
+    const stored = await this.storage.loadRestorable(userId);
     if (!stored) return;
 
     const message: StoredMessage = {

@@ -93,7 +93,7 @@ export class TelegramAcpBridge {
       const userPath = path.join(sessionsDir, userId);
       if (!fs.statSync(userPath).isDirectory()) continue;
 
-      const stored = await this.sessionManager!.getStorage().loadActive(userId);
+      const stored = await this.sessionManager!.getStorage().loadRestorable(userId);
       if (stored && stored.status === 'active') {
         this.log(`[restore] Restoring session for ${userId}`);
         try {

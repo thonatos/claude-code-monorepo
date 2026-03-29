@@ -57,7 +57,7 @@ export function createBot(
 
     const acpCtx = ctx as AcpContext;
     const session = await acpCtx.sessionManager.getOrCreate(userId);
-    const stored = await acpCtx.sessionManager.getStorage().loadActive(userId);
+    const stored = await acpCtx.sessionManager.getStorage().loadRestorable(userId);
 
     if (stored) {
       await ctx.reply(
@@ -75,7 +75,7 @@ export function createBot(
     if (!userId) return;
 
     const acpCtx = ctx as AcpContext;
-    const stored = await acpCtx.sessionManager.getStorage().loadActive(userId);
+    const stored = await acpCtx.sessionManager.getStorage().loadRestorable(userId);
 
     if (!stored) {
       await ctx.reply("No active session.");
