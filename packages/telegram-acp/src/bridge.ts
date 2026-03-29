@@ -28,6 +28,7 @@ export class TelegramAcpBridge {
       agentCwd: this.config.agent.cwd,
       agentEnv: this.config.agent.env,
       sessionConfig: this.config.session,
+      historyConfig: this.config.history,
       showThoughts: this.config.agent.showThoughts,
       log: this.log,
       onReply: async (userId: string, text: string) => {

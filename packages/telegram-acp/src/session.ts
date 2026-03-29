@@ -7,7 +7,8 @@ import { Writable, Readable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import { TelegramAcpClient } from "./client.ts";
 import packageJson from "../package.json" with { type: "json" };
-import type { SessionConfig } from "./config.ts";
+import type { SessionConfig, HistoryConfig } from "./config.ts";
+import { SessionStorage, type StoredSession, type StoredMessage } from "./storage.ts";
 
 export interface UserSession {
   userId: string;
@@ -24,6 +25,7 @@ export interface SessionManagerOpts {
   agentCwd: string;
   agentEnv?: Record<string, string>;
   sessionConfig: SessionConfig;
+  historyConfig: HistoryConfig;
   showThoughts: boolean;
   log: (msg: string) => void;
   onReply: (userId: string, text: string) => Promise<void>;
@@ -34,9 +36,16 @@ export class SessionManager {
   private sessions = new Map<string, UserSession>();
   private timers = new Map<string, NodeJS.Timeout>();
   private opts: SessionManagerOpts;
+  private storage: SessionStorage;
+  private pendingReplies = new Map<string, string[]>();
 
   constructor(opts: SessionManagerOpts) {
     this.opts = opts;
+    this.storage = new SessionStorage();
+  }
+
+  getStorage(): SessionStorage {
+    return this.storage;
   }
 
   /**
