@@ -223,7 +223,7 @@ export class SessionManager {
     return session;
   }
 
-  private async restore(userId: string, stored: StoredSession): Promise<UserSession> {
+  async restore(userId: string, stored: StoredSession): Promise<UserSession> {
     this.opts.log(`[session] Restoring for ${userId} (sessionId: ${stored.sessionId})`);
 
     const client = new TelegramAcpClient({
