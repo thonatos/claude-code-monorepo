@@ -9,33 +9,34 @@ description: 分析美股 K 线图走势并生成详细报告。使用 TradingVi
 
 ## ⚠️ 工作目录规范
 
-**工作目录**：项目根目录
+**ROOT_DIR**：通过 `git rev-parse --show-toplevel` 获取的项目根目录
 
-**技能目录**：`skills/stock-kline-analysis/`
+**执行位置**：所有脚本必须从 ROOT_DIR 执行
 
-所有路径使用相对于项目根目录的路径：
+**数据目录**：`$ROOT_DIR/data/analysis/`
 
-| 操作 | 相对路径 |
-|------|----------|
-| 创建数据目录 | `skills/stock-kline-analysis/scripts/create_dir.sh` |
-| 数据存储位置 | `skills/stock-kline-analysis/data/analysis/{datetime}-{symbol}-{interval}/` |
-| 截图保存 | `skills/stock-kline-analysis/data/analysis/.../screenshot.jpg` |
-| 报告保存 | `skills/stock-kline-analysis/data/analysis/.../report.md` |
-| 安装依赖 | `cd skills/stock-kline-analysis/scripts && bun install` |
-| 启动预览 | `cd skills/stock-kline-analysis && ./scripts/serve_preview.sh data/analysis/...` |
+**路径对照表：**
+
+| 操作 | 命令 |
+|------|------|
+| 创建数据目录 | `$ROOT_DIR/skills/stock-kline-analysis/scripts/create_dir.sh <symbol> <interval>` |
+| 数据存储位置 | `$ROOT_DIR/data/analysis/{datetime}-{symbol}-{interval}/` |
+| 截图保存 | `$ROOT_DIR/data/analysis/.../screenshot.jpg` |
+| 报告保存 | `$ROOT_DIR/data/analysis/.../report.md` |
+| 安装依赖 | `cd $ROOT_DIR/skills/stock-kline-analysis/scripts && bun install` |
+| 启动预览 | `$ROOT_DIR/skills/stock-kline-analysis/scripts/serve_preview.sh $ROOT_DIR/data/analysis/...` |
 
 ## 数据存储
 
-所有分析数据存储在技能目录下：
+所有分析数据集中存储在项目根目录下：
 
 ```
-skills/stock-kline-analysis/data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interval}/
+$ROOT_DIR/data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interval}/
 ├── screenshot.jpg       # K 线图截图
 ├── analysis_output.json # 分析数据（中间产物）
 └── report.md            # Markdown 分析报告
 ```
 
-**注意**：`data/` 目录已添加到 `.gitignore`，不应提交到版本控制。
 
 ## 工作流程（三阶段）
 
@@ -45,7 +46,7 @@ skills/stock-kline-analysis/data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interv
 
 **操作流程**：
 
-1. 创建数据目录 → `scripts/create_dir.sh`
+1. 创建数据目录 → `$ROOT_DIR/skills/stock-kline-analysis/scripts/create_dir.sh <symbol> <interval>`
 2. 打开 TradingView 图表并等待加载
 3. **键盘操作（一次性执行）**：
    ```
@@ -121,13 +122,13 @@ skills/stock-kline-analysis/data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interv
 首次运行需安装依赖：
 
 ```bash
-cd skills/stock-kline-analysis/scripts && bun install
+cd $ROOT_DIR/skills/stock-kline-analysis/scripts && bun install
 ```
 
 使用 `scripts/serve_preview.sh` 启动动态渲染服务器：
 
 ```bash
-./scripts/serve_preview.sh data/analysis/{datetime}-{symbol}-{interval}
+$ROOT_DIR/skills/stock-kline-analysis/scripts/serve_preview.sh $ROOT_DIR/data/analysis/{datetime}-{symbol}-{interval}
 # 打开 http://localhost:3000
 ```
 
@@ -135,7 +136,7 @@ cd skills/stock-kline-analysis/scripts && bun install
 
 ```bash
 lsof -ti:3000 | xargs kill -9
-./scripts/serve_preview.sh data/analysis/{datetime}-{symbol}-{interval}
+$ROOT_DIR/skills/stock-kline-analysis/scripts/serve_preview.sh $ROOT_DIR/data/analysis/{datetime}-{symbol}-{interval}
 ```
 
 截图以 base64 嵌入页面，无需生成静态 HTML。
