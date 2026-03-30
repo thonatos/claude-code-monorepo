@@ -9,9 +9,9 @@ description: 分析美股 K 线图走势并生成详细报告。使用 TradingVi
 
 ## ⚠️ 工作目录规范
 
-**ROOT_DIR**：通过 `git rev-parse --show-toplevel` 获取的项目根目录
+**$ROOT_DIR**：通过 `git rev-parse --show-toplevel` 获取的项目根目录
 
-**执行位置**：所有脚本必须从 ROOT_DIR 执行
+**执行位置**：所有脚本必须从 $ROOT_DIR 执行
 
 **数据目录**：`$ROOT_DIR/data/analysis/`
 
