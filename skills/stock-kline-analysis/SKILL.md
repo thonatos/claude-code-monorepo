@@ -26,12 +26,16 @@ data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interval}/
 
 详细步骤见 `references/capture.md`：
 
+**推荐键盘流程**（更高效）：
+
 1. 创建数据目录 → `scripts/create_dir.sh`
-2. 打开 TradingView 图表
-3. 全屏模式关闭 Strategy Report → `Shift + F`
-4. 切换股票代码 → 直接输入字母（如 `NVDA` + Enter）
-5. 切换时间周期 → 数字键（`8` = 4h）
+2. 打开 TradingView 图表并等待加载
+3. 进入全屏模式 → `Shift + F`（关闭 Strategy Report）
+4. 切换股票代码 → 直接输入字母 + `Enter`（如 `NVDA` + Enter）
+5. 切换时间周期 → 输入分钟数 + `Enter`（`240` = 4h, `60` = 1h）
 6. 截图保存
+
+**周期分钟数对照**：`1`=1m, `5`=5m, `15`=15m, `30`=30m, `60`=1h, `120`=2h, `240`=4h
 
 ### 阶段 2：技术分析
 
