@@ -14,8 +14,9 @@
 
 1. SKILL.md 保持 60-70 行的核心流程骨架
 2. 拆分 references：capture.md、analyze.md、report.md
-3. 提供辅助 scripts：create_dir.sh、serve_preview.sh、tradingview.js
+3. 提供辅助 scripts：create_dir.sh、serve_preview.sh、tradingview.js、report.tsx
 4. 静态服务器改用 bun（检测已安装则使用，否则提示安装）
+5. HTML 报告使用 TSX 生成，组件化结构便于维护
 
 ## 文件结构
 
@@ -42,13 +43,15 @@ stock-kline-analysis/
 │   │
 │   └── report.md         # 阶段 3：报告生成
 │   │   ├── Markdown 模板（结论优先）
-│   │   ├── HTML 模板
+│   │   ├── TSX 报告生成说明
+│   │   ├── 分析数据结构定义
 │   │   ├── 文件保存路径
 │   │
 └── scripts/
     ├── create_dir.sh     # 创建数据目录
     ├── serve_preview.sh  # bun 静态服务器检测与启动
-    └── tradingview.js    # Playwright 操作封装函数
+    ├── tradingview.js    # Playwright 操作封装函数
+    └── report.tsx        # TSX 报告生成器（bun 直接支持）
 ```
 
 ## SKILL.md 核心流程骨架
@@ -119,7 +122,8 @@ data/analysis/{YYYY-MM-DD}-{symbol}-{interval}/
 报告生成模板：
 - 报告原则：结论优先
 - Markdown 模板骨架
-- HTML 模板完整代码
+- TSX 报告生成说明（使用 bun 直接运行）
+- 分析数据结构定义（ReportData 类型）
 - 文件保存路径
 - 预览服务说明
 
@@ -159,23 +163,101 @@ bun x serve data/analysis -l $PORT
 
 通过 `browser_run_code` 调用。
 
+### report.tsx
+
+使用 bun 的 TSX 支持生成 HTML 报告，组件化结构便于维护：
+
+```tsx
+// scripts/report.tsx
+interface ReportData {
+  symbol: string;
+  price: number;
+  change: string;
+  interval: string;
+  datetime: string;
+  trend: '上涨' | '下跌' | '震荡';
+  action: '买入' | '卖出' | '观望';
+  riskLevel: '低' | '中' | '高';
+  support1: { price: number; note: string };
+  support2: { price: number; note: string };
+  resistance1: { price: number; note: string };
+  resistance2: { price: number; note: string };
+  bullishSignals: string[];
+  bearishSignals: string[];
+  entryCondition: string;
+  stopLoss: number;
+  takeProfit: number[];
+  risks: string[];
+  summary: string;
+}
+
+function Report({ data }: { data: ReportData }) {
+  return (
+    <html lang="zh-CN">
+      <head>
+        <meta charset="UTF-8" />
+        <title>{data.symbol} K 线技术分析报告</title>
+        <style>{styles}</style>
+      </head>
+      <body>
+        <Container>
+          <h1>{data.symbol} K 线技术分析报告</h1>
+          <Conclusion data={data} />
+          <img src="screenshot.jpg" alt="K 线图" class="screenshot" />
+          <BasicInfo data={data} />
+          <KeyLevels data={data} />
+          <Signals data={data} />
+          <Recommendations data={data} />
+          <Risks data={data} />
+          <Disclaimer />
+        </Container>
+      </body>
+    </html>
+  );
+}
+
+// 子组件
+function Conclusion({ data }) { ... }
+function BasicInfo({ data }) { ... }
+function KeyLevels({ data }) { ... }
+function Signals({ data }) { ... }
+function Recommendations({ data }) { ... }
+function Risks({ data }) { ... }
+function Disclaimer() { ... }
+```
+
+**生成方式**：
+```bash
+# 先生成 analysis_output.json（分析结果）
+# 然后运行 TSX 生成 HTML
+bun scripts/report.tsx --input analysis_output.json --output report.html
+```
+
+**优点**：
+- 组件化结构，易于维护
+- 类型安全（TypeScript）
+- 可复用组件
+- bun 直接支持 TSX，无需额外构建
+
 ## 实现步骤
 
 1. 创建 references/ 目录
 2. 创建 scripts/ 目录
 3. 编写 capture.md
 4. 编写 analyze.md
-5. 编写 report.md（含 HTML 模板完整代码）
+5. 编写 report.md（含 TSX 报告生成说明、数据结构定义）
 6. 编写 create_dir.sh
 7. 编写 serve_preview.sh
 8. 编写 tradingview.js
-9. 重构 SKILL.md 为骨架版本
-10. 删除原 SKILL.md 中冗余内容
+9. 编写 report.tsx（TSX 报告生成器）
+10. 重构 SKILL.md 为骨架版本
+11. 删除原 SKILL.md 中冗余内容
 
 ## 验收标准
 
 - SKILL.md 行数控制在 60-70 行
 - 各 reference 文件职责清晰，可独立查阅
 - scripts 可正常执行
+- report.tsx 可正常生成 HTML 报告（bun 直接运行）
 - 预览服务能正常启动（bun 检测有效）
 - 新结构与原功能保持一致
