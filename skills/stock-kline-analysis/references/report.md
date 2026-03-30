@@ -68,9 +68,9 @@
 本报告仅供参考，不构成投资建议。
 ```
 
-## TSX 报告生成器
+## 动态 HTML 报告
 
-使用 bun 的 TSX 支持生成 HTML 报告，参见 `scripts/report.tsx`。
+使用 bun server 动态渲染 TSX + 数据，截图作为静态文件直接 serve。
 
 ### 数据接口
 
@@ -101,23 +101,30 @@ interface ReportData {
 ## 生成流程
 
 1. 分析完成后保存 `analysis_output.json`
-2. 运行 TSX 生成器命令：
-   ```bash
-   bun run scripts/report.tsx
-   ```
+2. 启动预览服务（bun server 动态渲染 TSX + 截图）
 
 ## 文件保存路径
 
-- `report.md` - Markdown 格式报告
-- `report.html` - HTML 格式报告（交互式）
+- `screenshot.jpg` - K 线图截图
 - `analysis_output.json` - 分析结果数据
+- `report.md` - Markdown 格式报告
 
 ## 预览服务
 
-使用预览脚本查看生成的 HTML 报告：
+首次运行需安装依赖：
 
 ```bash
-bash scripts/serve_preview.sh
+cd skills/stock-kline-analysis/scripts && bun install
 ```
 
-该脚本会启动本地 HTTP 服务，并在浏览器中打开报告预览。
+启动预览服务器：
+
+```bash
+bash scripts/serve_preview.sh data/analysis/2026-03-31-12-30-45-TSLA-1h
+# 打开 http://localhost:3000
+```
+
+服务会自动：
+- 加载 `analysis_output.json` 数据
+- Serve `screenshot.jpg` 静态文件
+- 渲染 TSX 模板生成 HTML

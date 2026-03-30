@@ -12,11 +12,10 @@ description: 分析美股 K 线图走势并生成详细报告。使用 TradingVi
 所有分析数据存储在：
 
 ```
-data/analysis/{YYYY-MM-DD}-{symbol}-{interval}/
+data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interval}/
 ├── screenshot.jpg       # K 线图截图
 ├── analysis_output.json # 分析数据（中间产物）
-├── report.md            # Markdown 分析报告
-└── report.html          # HTML 预览页面
+└── report.md            # Markdown 分析报告
 ```
 
 **注意**：`data/` 目录已添加到 `.gitignore`，不应提交到版本控制。
@@ -29,9 +28,9 @@ data/analysis/{YYYY-MM-DD}-{symbol}-{interval}/
 
 1. 创建数据目录 → `scripts/create_dir.sh`
 2. 打开 TradingView 图表
-3. 检查并最小化 Strategy Report → `scripts/tradingview.js`
-4. 切换目标股票代码
-5. 调整时间周期（默认 4h）
+3. 全屏模式关闭 Strategy Report → `Shift + F`
+4. 切换股票代码 → 直接输入字母（如 `NVDA` + Enter）
+5. 切换时间周期 → 数字键（`8` = 4h）
 6. 截图保存
 
 ### 阶段 2：技术分析
@@ -50,17 +49,25 @@ data/analysis/{YYYY-MM-DD}-{symbol}-{interval}/
 详细模板见 `references/report.md`：
 
 1. 按模板生成 Markdown 报告（结论优先）
-2. 使用 `scripts/report.tsx` 生成 HTML 预览页面
-3. 提示用户预览路径
+2. 保存 `analysis_output.json` 分析数据
+3. 启动 bun server 动态渲染 HTML 预览
 
 ## 预览报告
 
-使用 `scripts/serve_preview.sh` 启动静态服务器：
+首次运行需安装依赖：
 
 ```bash
-./scripts/serve_preview.sh
-# 打开 http://localhost:3000/{date}-{symbol}-{interval}/report.html
+cd skills/stock-kline-analysis/scripts && bun install
 ```
+
+使用 `scripts/serve_preview.sh` 启动动态渲染服务器：
+
+```bash
+./scripts/serve_preview.sh data/analysis/{datetime}-{symbol}-{interval}
+# 打开 http://localhost:3000
+```
+
+截图以 base64 嵌入页面，无需生成静态 HTML。
 
 ## 使用示例
 

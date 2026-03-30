@@ -1,8 +1,11 @@
 #!/usr/bin/env bun
 /**
- * Stock K-Line Analysis Report Generator
- * Generates HTML reports from analysis data using bun's JSX support
+ * Stock K-Line Analysis Report Server
+ * Dynamically renders TSX + data using bun's built-in server
+ * Serves screenshot as static file (not base64) to save context space
  */
+
+import { renderToString } from "react-dom/server";
 
 // ============================================================================
 // Interfaces
@@ -40,7 +43,7 @@ const styles = `
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
     color: #333;
-    max-width: 900px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 20px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -72,6 +75,13 @@ const styles = `
     font-size: 1.2em;
     font-weight: 600;
   }
+  .screenshot {
+    width: 100%;
+    max-width: 900px;
+    border-radius: 8px;
+    margin: 20px 0 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
   .conclusion {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 25px;
@@ -87,7 +97,7 @@ const styles = `
   }
   .conclusion-box {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     margin-top: 15px;
   }
@@ -236,9 +246,6 @@ function Container({ children }: { children: any }) {
 }
 
 function Conclusion({ data }: { data: ReportData }) {
-  const priceClass = data.change.startsWith('+') ? 'price-up' :
-                     data.change.startsWith('-') ? 'price-down' : 'price-neutral';
-
   const actionClass = data.action === '买入' ? 'action-buy' :
                       data.action === '卖出' ? 'action-sell' : 'action-wait';
 
@@ -258,16 +265,16 @@ function Conclusion({ data }: { data: ReportData }) {
           <span className={actionClass}>{data.action}</span>
         </div>
         <div className="conclusion-item">
+          <strong>风险等级：</strong>
+          <span className={riskClass}>{data.riskLevel}</span>
+        </div>
+        <div className="conclusion-item">
           <strong>关键支撑：</strong>
           ${data.support1.price.toFixed(2)}
         </div>
         <div className="conclusion-item">
           <strong>关键阻力：</strong>
           ${data.resistance1.price.toFixed(2)}
-        </div>
-        <div className="conclusion-item">
-          <strong>风险等级：</strong>
-          <span className={riskClass}>{data.riskLevel}</span>
         </div>
         <div className="conclusion-item">
           <strong>分析周期：</strong>
@@ -278,6 +285,16 @@ function Conclusion({ data }: { data: ReportData }) {
         {data.summary}
       </div>
     </div>
+  );
+}
+
+function Screenshot() {
+  return (
+    <img
+      src="/screenshot.jpg"
+      alt="K线图截图"
+      className="screenshot"
+    />
   );
 }
 
@@ -441,6 +458,8 @@ function Report({ data }: { data: ReportData }) {
 
       <Conclusion data={data} />
 
+      <Screenshot />
+
       <BasicInfo data={data} />
 
       <KeyLevels data={data} />
@@ -457,61 +476,70 @@ function Report({ data }: { data: ReportData }) {
 }
 
 // ============================================================================
-// CLI Entry Point
+// Server
 // ============================================================================
 
-function parseArgs(args: string[]): { input: string; output: string } {
-  const parsed = {
-    input: '',
-    output: ''
+interface AnalysisDir {
+  path: string;
+  data: ReportData;
+  screenshotPath: string;
+}
+
+async function loadAnalysisDir(dirPath: string): Promise<AnalysisDir | null> {
+  const dataPath = `${dirPath}/analysis_output.json`;
+  const screenshotPath = `${dirPath}/screenshot.jpg`;
+
+  // Check files exist
+  const dataFile = Bun.file(dataPath);
+  const screenshotFile = Bun.file(screenshotPath);
+
+  if (!(await dataFile.exists()) || !(await screenshotFile.exists())) {
+    return null;
+  }
+
+  const data = await dataFile.json<ReportData>();
+
+  return {
+    path: dirPath,
+    data,
+    screenshotPath
   };
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg.startsWith('--input=')) {
-      parsed.input = arg.slice(8);
-    } else if (arg.startsWith('--output=')) {
-      parsed.output = arg.slice(9);
-    }
-  }
-
-  if (!parsed.input) {
-    console.error('Error: --input argument is required');
-    console.error('Usage: bun report.tsx --input=<input.json> --output=<output.html>');
-    process.exit(1);
-  }
-
-  if (!parsed.output) {
-    console.error('Error: --output argument is required');
-    console.error('Usage: bun report.tsx --input=<input.json> --output=<output.html>');
-    process.exit(1);
-  }
-
-  return parsed;
 }
 
-async function main() {
-  // Parse CLI arguments
-  const args = parseArgs(Bun.argv.slice(2));
+const args = Bun.argv.slice(2);
+const analysisDir = args[0] || './data/analysis';
 
-  console.log(`Reading input from: ${args.input}`);
+console.log(`Loading analysis from: ${analysisDir}`);
 
-  // Read JSON data
-  const data = await Bun.file(args.input).json<ReportData>();
+const analysis = await loadAnalysisDir(analysisDir);
 
-  console.log(`Generating HTML report for: ${data.symbol}`);
-
-  // Generate HTML using JSX
-  const html = <Report data={data} />;
-
-  // Write output
-  await Bun.write(args.output, html);
-
-  console.log(`HTML report saved to: ${args.output}`);
-}
-
-// Run main function
-main().catch(error => {
-  console.error('Error generating report:', error);
+if (!analysis) {
+  console.error(`Error: Could not find analysis files in ${analysisDir}`);
+  console.error('Required files: analysis_output.json, screenshot.jpg');
   process.exit(1);
+}
+
+console.log(`Starting server for: ${analysis.data.symbol} ${analysis.data.interval}`);
+console.log(`Open http://localhost:3000 to view the report`);
+
+Bun.serve({
+  port: 3000,
+  fetch(req) {
+    const url = new URL(req.url);
+
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      const html = renderToString(<Report data={analysis.data} />);
+      return new Response(html, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+      });
+    }
+
+    if (url.pathname === '/screenshot.jpg') {
+      return new Response(Bun.file(analysis.screenshotPath), {
+        headers: { 'Content-Type': 'image/jpeg' }
+      });
+    }
+
+    return new Response('Not Found', { status: 404 });
+  }
 });
