@@ -1,7 +1,13 @@
 #!/bin/bash
-# 启动动态预览服务器 (bun server 渲染 TSX + 数据)
-# 用法: ./serve_preview.sh <analysis_dir>
-# 示例: ./serve_preview.sh data/analysis/2026-03-31-12-30-45-TSLA-1h
+# 启动动态预览服务器
+# 用法: ./skills/stock-kline-analysis/scripts/serve_preview.sh <analysis_dir>
+# 必须从项目根目录执行
+
+ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo "Not in a git repository")
+if [ "$ROOT_DIR" = "Not in a git repository" ]; then
+    echo "Error: Must run from within a git repository"
+    exit 1
+fi
 
 PORT=3000
 
@@ -9,7 +15,6 @@ PORT=3000
 if ! command -v bun &> /dev/null; then
     echo "bun not found. Please install bun:"
     echo "  curl -fsSL https://bun.sh/install | bash"
-    echo "  or visit: https://bun.sh"
     exit 1
 fi
 
@@ -18,10 +23,10 @@ ANALYSIS_DIR="${1:-}"
 
 if [ -z "$ANALYSIS_DIR" ]; then
     echo "Usage: $0 <analysis_dir>"
-    echo "Example: $0 data/analysis/2026-03-31-12-30-45-TSLA-1h"
+    echo "Example: $0 $ROOT_DIR/data/analysis/2026-03-31-12-30-45-TSLA-1h"
     echo ""
     echo "Available analysis directories:"
-    ls -d data/analysis/*/ 2>/dev/null | head -5
+    ls -d "$ROOT_DIR/data/analysis/*/" 2>/dev/null | head -5
     exit 1
 fi
 
