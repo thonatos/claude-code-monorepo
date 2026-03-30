@@ -87,6 +87,12 @@ mcp__playwright__browser_run_code(
 
 截图完成后必须关闭页面：
 
+**正确方法**：
 ```javascript
 mcp__playwright__browser_tabs(action: "close")
+```
+
+**错误方法**（不要使用）：
+```javascript
+mcp__playwright__browser_close()  // ❌ 错误，会关闭所有页面
 ```

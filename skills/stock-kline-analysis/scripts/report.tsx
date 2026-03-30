@@ -600,8 +600,10 @@ function Container({ children }: { children: any }) {
 }
 
 function Header({ data }: { data: ReportData }) {
-  const priceClass = data.change.startsWith('+') ? 'price-up' :
-                     data.change.startsWith('-') ? 'price-down' : 'price-neutral';
+  // 确保 change 是字符串类型
+  const changeStr = typeof data.change === 'string' ? data.change : `${data.change}%`;
+  const priceClass = changeStr.startsWith('+') ? 'price-up' :
+                     changeStr.startsWith('-') ? 'price-down' : 'price-neutral';
 
   return (
     <header className="header">
@@ -618,7 +620,7 @@ function Header({ data }: { data: ReportData }) {
       <div className="header-right">
         <div className="price-display">${data.price.toFixed(2)}</div>
         <span className={`price-change ${priceClass}`}>
-          {data.change.startsWith('+') ? '▲' : data.change.startsWith('-') ? '▼' : '●'} {data.change}
+          {changeStr.startsWith('+') ? '▲' : changeStr.startsWith('-') ? '▼' : '●'} {changeStr}
         </span>
       </div>
     </header>
