@@ -24,18 +24,26 @@ data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interval}/
 
 ### 阶段 1：截图采集
 
-详细步骤见 `references/capture.md`：
+**⚠️ 键盘优先原则**：TradingView 支持全局键盘输入，无需点击任何按钮。直接用键盘更高效。
 
-**推荐键盘流程**（更高效）：
+**操作流程**：
 
 1. 创建数据目录 → `scripts/create_dir.sh`
 2. 打开 TradingView 图表并等待加载
-3. 进入全屏模式 → `Shift + F`（关闭 Strategy Report）
-4. 切换股票代码 → 直接输入字母 + `Enter`（如 `NVDA` + Enter）
-5. 切换时间周期 → 输入分钟数 + `Enter`（`240` = 4h, `60` = 1h）
-6. 截图保存
+3. **键盘操作（一次性执行）**：
+   ```
+   Shift+F          → 进入全屏（关闭 Strategy Report）
+   输入股票代码      → 如 QQQ、NVDA、AAPL
+   Enter            → 确认切换股票
+   输入分钟数        → 240=4h, 60=1h, 1440=D
+   Enter            → 确认切换周期
+   ```
+4. 等待图表加载后截图
+5. **关闭页面** → `browser_tabs(action: "close")`
 
-**周期分钟数对照**：`1`=1m, `5`=5m, `15`=15m, `30`=30m, `60`=1h, `120`=2h, `240`=4h
+**周期分钟数**：`1`=1m, `5`=5m, `15`=15m, `30`=30m, `60`=1h, `120`=2h, `240`=4h, `1440`=D
+
+详细步骤见 `references/capture.md`
 
 ### 阶段 2：技术分析
 
@@ -69,6 +77,13 @@ cd skills/stock-kline-analysis/scripts && bun install
 ```bash
 ./scripts/serve_preview.sh data/analysis/{datetime}-{symbol}-{interval}
 # 打开 http://localhost:3000
+```
+
+**端口占用处理**：如端口 3000 被占用，先关闭占用进程：
+
+```bash
+lsof -ti:3000 | xargs kill -9
+./scripts/serve_preview.sh data/analysis/{datetime}-{symbol}-{interval}
 ```
 
 截图以 base64 嵌入页面，无需生成静态 HTML。
