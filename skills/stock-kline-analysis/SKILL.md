@@ -42,24 +42,18 @@ $ROOT_DIR/data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interval}/
 
 ### 阶段 1：截图采集
 
-**⚠️ 键盘优先原则**：TradingView 支持全局键盘输入，无需点击任何按钮。直接用键盘更高效。
+**⚠️ 键盘优先 + 分步执行**：TradingView 支持全局键盘输入，使用分步操作便于状态检查和错误处理。
 
 **操作流程**：
 
 1. 创建数据目录 → `$ROOT_DIR/skills/stock-kline-analysis/scripts/create_dir.sh <symbol> <interval>`
-2. 打开 TradingView 图表并等待加载
-3. **键盘操作（一次性执行）**：
-   ```
-   Shift+F          → 进入全屏（关闭 Strategy Report）
-   输入股票代码      → 如 QQQ、NVDA、AAPL
-   Enter            → 确认切换股票
-   输入分钟数        → 240=4h, 60=1h, 1440=D
-   Enter            → 确认切换周期
-   ```
-4. 等待图表加载后截图
-5. **关闭页面** → 必须使用 `mcp__playwright__browser_tabs(action: "close")`
-
-**⚠️ 重要**：截图完成后必须正确关闭 tab，使用 `browser_tabs(action: "close")`，不要使用 `browser_close`。
+2. 打开 TradingView 图表，等待加载（3秒）
+3. **全屏模式**：Shift + F，等待 500ms
+4. **状态检查**：获取 snapshot，如有弹窗遮挡则 ESC 关闭
+5. **检查股票**：确认当前股票是否为目标，如不正确则输入代码 + Enter
+6. **检查周期**：确认当前周期是否为目标，如不正确则输入分钟数 + Enter
+7. 截图保存到目标路径
+8. **关闭页面**：使用 `browser_tabs(action: "close")`
 
 **周期分钟数**：`1`=1m, `5`=5m, `15`=15m, `30`=30m, `60`=1h, `120`=2h, `240`=4h, `1440`=D
 
