@@ -42,7 +42,7 @@ $ROOT_DIR/skills/stock-kline-analysis/scripts/create_dir.sh <symbol> <interval>
 ### 2. 打开 TradingView
 
 ```javascript
-mcp__playwright__browser_navigate(url: "https://www.tradingview.com/chart/")
+mcp__playwright__browser_navigate(url: "https://www.tradingview.com/chart/syIycOlQ/")
 mcp__playwright__browser_wait_for(time: 3)
 ```
 
@@ -89,7 +89,12 @@ mcp__playwright__browser_wait_for(time: 0.2)
 如不正确，输入股票代码切换：
 
 ```javascript
-mcp__playwright__browser_type(text: 'AAPL')  // 输入目标股票代码
+// 使用 run_code 输入文字（browser_type 无法直接在 TradingView 页面输入）
+mcp__playwright__browser_run_code(
+  code: async (page) => {
+    await page.keyboard.type('AAPL');  // 输入目标股票代码
+  }
+)
 mcp__playwright__browser_press_key('Enter')
 mcp__playwright__browser_wait_for(time: 2)
 ```
@@ -101,7 +106,12 @@ mcp__playwright__browser_wait_for(time: 2)
 如不正确，输入分钟数切换：
 
 ```javascript
-mcp__playwright__browser_type(text: '240')  // 输入分钟数：240 = 4h
+// 使用 run_code 输入数字
+mcp__playwright__browser_run_code(
+  code: async (page) => {
+    await page.keyboard.type('15');  // 输入分钟数：15 = 15m
+  }
+)
 mcp__playwright__browser_press_key('Enter')
 mcp__playwright__browser_wait_for(time: 1.5)
 ```
