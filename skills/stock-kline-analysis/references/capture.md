@@ -7,6 +7,25 @@
 **TradingView 支持全局键盘输入，无需点击按钮。**
 **分步执行便于检查状态和处理异常。**
 
+### ⚠️ 必须使用 keyboard.type，不能用 browser_type
+
+TradingView 图表是 Canvas 元素，不是 `<input>` 或 `<textarea>`。
+直接使用 `browser_type` 会报错：`Element is not an <input>...`
+
+**正确方法**：
+```javascript
+mcp__playwright__browser_run_code(
+  code: async (page) => {
+    await page.keyboard.type('AAPL');  // ✅ 正确
+  }
+)
+```
+
+**错误方法**：
+```javascript
+mcp__playwright__browser_type(element: 'Chart', text: 'AAPL')  // ❌ 报错
+```
+
 ## TradingView 快捷键
 
 | 操作 | 快捷键 | 说明 |

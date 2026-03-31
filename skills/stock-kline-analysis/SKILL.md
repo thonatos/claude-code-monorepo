@@ -42,6 +42,31 @@ $ROOT_DIR/data/analysis/{YYYY-MM-DD-HH-MM-SS}-{symbol}-{interval}/
 
 ### 阶段 1：截图采集
 
+**⚠️ 重要：TradingView 键盘输入方式**
+
+TradingView 页面支持全局键盘输入，**不能使用 `browser_type` 工具**。
+
+| 工具 | 是否可用 | 说明 |
+|------|----------|------|
+| `browser_type` | ❌ 不可用 | TradingView 图表是 Canvas，不是可编辑元素 |
+| `browser_run_code` + `page.keyboard.type()` | ✅ 正确方法 | 模拟全局键盘输入 |
+| `browser_press_key` | ✅ 可用 | 发送单个按键（Enter, Escape 等） |
+
+**正确示例**：
+```javascript
+mcp__playwright__browser_run_code(
+  code: async (page) => {
+    await page.keyboard.type('NVDA');  // 输入股票代码
+    await page.keyboard.press('Enter');
+  }
+)
+```
+
+**错误示例**：
+```javascript
+mcp__playwright__browser_type(ref: 'e452', text: 'NVDA')  // ❌ 会报错
+```
+
 **⚠️ 键盘优先 + 分步执行**：TradingView 支持全局键盘输入，使用分步操作便于状态检查和错误处理。
 
 **操作流程**：
