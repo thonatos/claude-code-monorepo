@@ -37,6 +37,20 @@ REPORT_SCRIPT="${SCRIPT_DIR}/report.tsx"
 # 获取分析目录绝对路径
 ABS_ANALYSIS_DIR="$(cd "$ANALYSIS_DIR" && pwd)"
 
+# 检查端口占用并自动关闭
+PID=$(lsof -ti:$PORT 2>/dev/null)
+if [ -n "$PID" ]; then
+    echo "Port $PORT is in use (PID: $PID). Killing process..."
+    kill -9 $PID 2>/dev/null
+    sleep 1
+    # 验证端口是否已释放
+    if lsof -ti:$PORT >/dev/null 2>&1; then
+        echo "Failed to kill process on port $PORT. Please manually free the port."
+        exit 1
+    fi
+    echo "Port $PORT freed."
+fi
+
 echo "Starting preview server..."
 echo "Analysis: $ABS_ANALYSIS_DIR"
 echo "Open: http://localhost:$PORT"
