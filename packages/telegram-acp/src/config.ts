@@ -6,6 +6,8 @@ import path from "node:path";
 import os from "node:os";
 import fs from "node:fs";
 import { parse as parseYaml } from "yaml";
+import type { HistoryInjectionConfig } from "./history.ts";
+import type { MetricsConfig } from "./metrics.ts";
 
 export interface AgentPreset {
   label: string;
@@ -17,17 +19,28 @@ export interface AgentPreset {
 export interface SessionConfig {
   idleTimeoutMs: number;
   maxConcurrentUsers: number;
+  autoRecover?: boolean;              // Enable auto-recovery on crash
+  healthCheckIntervalMs?: number;      // Health check interval
 }
 
 export interface HistoryConfig {
   maxMessages: number | null;   // null = unlimited
   maxDays: number | null;       // null = unlimited
+  injection?: HistoryInjectionConfig;  // History injection config
 }
 
 export interface ReactionConfig {
   enabled: boolean;
   emoji?: string;
   randomEmojis?: string[];
+}
+
+export interface ObservabilityConfig {
+  metrics?: MetricsConfig;      // Metrics collection config
+  logging?: {
+    level: 'debug' | 'info' | 'warn' | 'error';
+    format: 'text' | 'json';
+  };
 }
 
 export interface TelegramAcpConfig {
@@ -46,6 +59,7 @@ export interface TelegramAcpConfig {
   reaction: ReactionConfig;
   session: SessionConfig;
   history: HistoryConfig;
+  observability?: ObservabilityConfig;
   log?: (msg: string) => void;
 }
 
@@ -91,10 +105,30 @@ export function defaultConfig(): TelegramAcpConfig {
     session: {
       idleTimeoutMs: 1440 * 60_000, // 24 hours
       maxConcurrentUsers: 10,
+      autoRecover: true,
+      healthCheckIntervalMs: 30000,
     },
     history: {
       maxMessages: null,
       maxDays: null,
+      injection: {
+        strategy: 'smart',
+        maxTokens: 4000,
+        maxMessages: 20,
+        recentWindowMs: 60 * 60 * 1000,
+        truncateThreshold: 2000,
+      },
+    },
+    observability: {
+      metrics: {
+        enabled: true,
+        port: 9090,
+        prefix: 'telegram_acp',
+      },
+      logging: {
+        level: 'info',
+        format: 'text',
+      },
     },
     log: undefined,
   };
@@ -140,12 +174,28 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
           fileConfig.session.idleTimeoutMs ?? config.session.idleTimeoutMs;
         config.session.maxConcurrentUsers =
           fileConfig.session.maxConcurrentUsers ?? config.session.maxConcurrentUsers;
+        config.session.autoRecover =
+          fileConfig.session.autoRecover ?? config.session.autoRecover;
+        config.session.healthCheckIntervalMs =
+          fileConfig.session.healthCheckIntervalMs ?? config.session.healthCheckIntervalMs;
       }
       if (fileConfig.history) {
         config.history.maxMessages = fileConfig.history.maxMessages ?? config.history.maxMessages;
         config.history.maxDays = fileConfig.history.maxDays ?? config.history.maxDays;
+        if (fileConfig.history.injection) {
+          config.history.injection = {
+            ...config.history.injection!,
+            ...fileConfig.history.injection,
+          };
+        }
       }
       if (fileConfig.reaction) config.reaction = fileConfig.reaction;
+      if (fileConfig.observability) {
+        config.observability = {
+          ...config.observability!,
+          ...fileConfig.observability,
+        };
+      }
 
       // Top-level fields
       if (fileConfig.proxy) config.proxy = fileConfig.proxy;

@@ -1,11 +1,12 @@
 /**
- * Session lifecycle management: spawn agent, manage idle timeout, cleanup.
+ * Session lifecycle management: spawn agent, manage idle timeout, health checks, cleanup.
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { Writable, Readable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import { TelegramAcpClient } from "./client.ts";
+import { HealthMonitor, DEFAULT_HEALTH_CONFIG, isProcessAlive, gracefulTerminate } from "./health.ts";
 import packageJson from "../package.json" with { type: "json" };
 import type { SessionConfig, HistoryConfig } from "./config.ts";
 import { SessionStorage, type StoredSession, type StoredMessage } from "./storage.ts";
@@ -17,6 +18,7 @@ export interface UserSession {
   sessionId: string;
   process: ChildProcess;
   lastActivity: number;
+  healthMonitor: HealthMonitor;
 }
 
 export interface RestoredSession {
@@ -37,9 +39,8 @@ export interface SessionManagerOpts {
   log: (msg: string) => void;
   onReply: (userId: string, text: string) => Promise<void>;
   sendTyping: (userId: string) => Promise<void>;
-  // Streaming message support
-  sendMessage?: (userId: string, text: string, parseMode?: 'HTML') => Promise<number>;
-  editMessage?: (userId: string, msgId: number, text: string, parseMode?: 'HTML') => Promise<number>;
+  sendMessage: (userId: string, text: string, parseMode?: 'HTML') => Promise<number>;
+  editMessage: (userId: string, msgId: number, text: string, parseMode?: 'HTML') => Promise<number>;
 }
 
 export class SessionManager {
@@ -92,15 +93,17 @@ export class SessionManager {
     // Mark all active sessions as inactive
     for (const [userId, session] of this.sessions) {
       await this.storage.updateStatus(userId, session.sessionId, 'inactive');
+      session.healthMonitor.stop();
     }
 
-    // Existing cleanup...
+    // Terminate all processes
     for (const [userId, session] of this.sessions) {
       this.opts.log(`[session] Stopping for ${userId}`);
-      this.killAgent(session.process);
+      await gracefulTerminate(session.process, 5000, this.opts.log);
     }
     this.sessions.clear();
 
+    // Clear timers
     for (const timer of this.timers.values()) {
       clearTimeout(timer);
     }
@@ -157,7 +160,8 @@ export class SessionManager {
     if (existing) {
       // Mark old session as terminated
       await this.storage.markTerminated(userId, existing.sessionId);
-      this.killAgent(existing.process);
+      existing.healthMonitor.stop();
+      await gracefulTerminate(existing.process, 5000, this.opts.log);
       this.sessions.delete(userId);
       this.timers.delete(userId);
       this.opts.log(`[session] Terminated session for ${userId}`);
@@ -187,28 +191,19 @@ export class SessionManager {
       onThoughtFlush: (text: string) => this.opts.onReply(userId, text),
       log: (msg: string) => this.opts.log(`[${userId}] ${msg}`),
       showThoughts: this.opts.showThoughts,
-      // Streaming message support
       sendMessage: async (text: string, parseMode?: 'HTML') => {
-        return this.opts.sendMessage?.(userId, text, parseMode) ?? 0;
+        return this.opts.sendMessage(userId, text, parseMode);
       },
       editMessage: async (msgId: number, text: string, parseMode?: 'HTML') => {
-        return this.opts.editMessage?.(userId, msgId, text, parseMode) ?? 0;
+        return this.opts.editMessage(userId, msgId, text, parseMode);
       },
     });
 
     const { process, connection, sessionId } = await this.spawnAgent(userId, client);
 
-    const session: UserSession = {
-      userId,
-      client,
-      connection,
-      sessionId,
-      process,
-      lastActivity: Date.now(),
-    };
-
-    // Persist session metadata
-    const stored: StoredSession = {
+    // Initialize session data
+    const now = Date.now();
+    const storedSession: StoredSession = {
       userId,
       sessionId,
       agentConfig: {
@@ -217,22 +212,51 @@ export class SessionManager {
         args: this.opts.agentArgs,
         cwd: this.opts.agentCwd,
       },
-      createdAt: Date.now(),
-      lastActivity: Date.now(),
+      createdAt: now,
+      lastActivity: now,
       status: 'active',
       messages: [],
     };
-    await this.storage.save(stored);
+    await this.storage.save(storedSession);
 
-    // Cleanup on process exit
-    process.on("exit", (code, signal) => {
+    // Create health monitor with auto-recovery
+    const healthMonitor = new HealthMonitor(
+      DEFAULT_HEALTH_CONFIG,
+      (msg) => this.opts.log(`[${userId}] ${msg}`),
+      async () => {
+        this.opts.log(`[health] Auto-recovering ${userId}`);
+        const session = this.sessions.get(userId);
+        if (session) {
+          await this.restart(userId);
+          await this.opts.sendMessage(userId, "🔄 Session auto-recovered due to health issue", "HTML");
+        }
+      }
+    );
+
+    const session: UserSession = {
+      userId,
+      client,
+      connection,
+      sessionId,
+      process,
+      lastActivity: now,
+      healthMonitor,
+    };
+
+    // Setup process exit handler
+    process.on('exit', (code, signal) => {
       this.opts.log(`[agent] ${userId} exited code=${code ?? "?"} signal=${signal ?? "?"}`);
       const s = this.sessions.get(userId);
       if (s && s.process === process) {
+        // Mark as unhealthy on unexpected exit
+        s.healthMonitor.markUnhealthy(`Process exited with code=${code ?? "?"}`);
         this.sessions.delete(userId);
         this.timers.delete(userId);
       }
     });
+
+    // Start health monitoring
+    healthMonitor.start();
 
     this.sessions.set(userId, session);
     this.resetIdleTimer(userId);
@@ -251,12 +275,11 @@ export class SessionManager {
       },
       log: (msg: string) => this.opts.log(`[${userId}] ${msg}`),
       showThoughts: this.opts.showThoughts,
-      // Streaming message support
       sendMessage: async (text: string, parseMode?: 'HTML') => {
-        return this.opts.sendMessage?.(userId, text, parseMode) ?? 0;
+        return this.opts.sendMessage(userId, text, parseMode);
       },
       editMessage: async (msgId: number, text: string, parseMode?: 'HTML') => {
-        return this.opts.editMessage?.(userId, msgId, text, parseMode) ?? 0;
+        return this.opts.editMessage(userId, msgId, text, parseMode);
       },
     });
 
@@ -268,6 +291,20 @@ export class SessionManager {
     stored.status = 'active';
     await this.storage.save(stored);
 
+    // Create health monitor
+    const healthMonitor = new HealthMonitor(
+      DEFAULT_HEALTH_CONFIG,
+      (msg) => this.opts.log(`[${userId}] ${msg}`),
+      async () => {
+        this.opts.log(`[health] Auto-recovering ${userId}`);
+        const session = this.sessions.get(userId);
+        if (session) {
+          await this.restart(userId);
+          await this.opts.sendMessage(userId, "🔄 Session auto-recovered", "HTML");
+        }
+      }
+    );
+
     const session: UserSession = {
       userId,
       client,
@@ -275,17 +312,20 @@ export class SessionManager {
       sessionId,
       process,
       lastActivity: Date.now(),
+      healthMonitor,
     };
 
     process.on('exit', (code, signal) => {
-      this.opts.log(`[agent] ${userId} exited code=${code ?? '?'} signal=${signal ?? '?'}`);
+      this.opts.log(`[agent] ${userId} exited code=${code ?? "?"} signal=${signal ?? "?"}`);
       const s = this.sessions.get(userId);
       if (s && s.process === process) {
+        s.healthMonitor.markUnhealthy(`Process exited with code=${code ?? "?"}`);
         this.sessions.delete(userId);
         this.timers.delete(userId);
       }
     });
 
+    healthMonitor.start();
     this.sessions.set(userId, session);
     this.resetIdleTimer(userId);
 
@@ -348,26 +388,20 @@ export class SessionManager {
     return { process: proc, connection, sessionId: sessionResult.sessionId };
   }
 
-  private killAgent(proc: ChildProcess): void {
-    if (!proc.killed) {
-      proc.kill("SIGTERM");
-      setTimeout(() => {
-        if (!proc.killed) proc.kill("SIGKILL");
-      }, 5000).unref();
-    }
-  }
-
   private resetIdleTimer(userId: string): void {
     if (this.opts.sessionConfig.idleTimeoutMs <= 0) return;
 
     const existing = this.timers.get(userId);
     if (existing) clearTimeout(existing);
 
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       this.opts.log(`[session] ${userId} idle, removing`);
       const session = this.sessions.get(userId);
       if (session) {
-        this.killAgent(session.process);
+        // Mark as inactive before removing
+        await this.storage.updateStatus(userId, session.sessionId, 'inactive');
+        session.healthMonitor.stop();
+        await gracefulTerminate(session.process, 5000, this.opts.log);
         this.sessions.delete(userId);
       }
       this.timers.delete(userId);
@@ -389,7 +423,10 @@ export class SessionManager {
       this.opts.log(`[session] Evicting oldest: ${oldest.userId}`);
       const session = this.sessions.get(oldest.userId);
       if (session) {
-        this.killAgent(session.process);
+        session.healthMonitor.stop();
+        gracefulTerminate(session.process, 5000, this.opts.log).catch(err => {
+          this.opts.log(`[session] Eviction error: ${String(err)}`);
+        });
         this.sessions.delete(oldest.userId);
         this.timers.delete(oldest.userId);
       }

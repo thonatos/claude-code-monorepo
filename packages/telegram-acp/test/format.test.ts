@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHtml, formatForTelegram } from '../src/bot.ts';
+import { escapeHtml } from '../src/bot/formatters/escape.ts';
+import { formatForTelegram } from '../src/bot/formatters/markdown.ts';
 
 describe('escapeHtml', () => {
   it('should escape special HTML characters', () => {

@@ -4,7 +4,7 @@
 
 import path from "node:path";
 import fs from "node:fs";
-import { createBot, startBot, stopBot, type Bot } from "./bot.ts";
+import { createBot, startBot, stopBot, type Bot } from "./bot/index.ts";
 import { SessionManager } from "./session.ts";
 import type { TelegramAcpConfig } from "./config.ts";
 import { defaultStorageDir } from "./config.ts";
@@ -46,22 +46,30 @@ export class TelegramAcpBridge {
           await this.bot.api.sendChatAction(userId, "typing");
         }
       },
-      // Streaming message support
       sendMessage: async (userId: string, text: string, parseMode?: 'HTML') => {
         if (!this.bot) return 0;
-        const msg = await this.bot.api.sendMessage(userId, text, {
-          parse_mode: parseMode
-        });
-        return msg.message_id;
+        try {
+          const msg = await this.bot.api.sendMessage(userId, text, {
+            parse_mode: parseMode
+          });
+          return msg.message_id;
+        } catch (err) {
+          this.log(`[bridge] Error sending message: ${String(err)}`);
+          return 0;
+        }
       },
       editMessage: async (userId: string, msgId: number, text: string, parseMode?: 'HTML') => {
-        if (!this.bot) return 0;
-        const result = await this.bot.api.editMessageText(userId, msgId, text, {
-          parse_mode: parseMode
-        });
-        // editMessageText returns true if no change, or Edited object if changed
-        if (result === true) return msgId;
-        return result.message_id;
+        if (!this.bot || !msgId || msgId <= 0) return 0;
+        try {
+          const result = await this.bot.api.editMessageText(userId, msgId, text, {
+            parse_mode: parseMode
+          });
+          if (result === true) return msgId;
+          return result.message_id;
+        } catch (err) {
+          this.log(`[bridge] Error editing message: ${String(err)}`);
+          return 0;
+        }
       },
     });
 

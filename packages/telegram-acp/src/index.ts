@@ -1,6 +1,12 @@
 export { TelegramAcpBridge } from "./bridge.ts";
 export type { TelegramAcpConfig } from "./config.ts";
-export type { UserSession, SessionManagerOpts } from "./session.ts";
+export type { UserSession, SessionManagerOpts, RestoredSession } from "./session.ts";
 export { SessionManager } from "./session.ts";
 export { PRESETS, loadConfig, listPresets } from "./config.ts";
-export { SessionStorage, StoredSession, StoredMessage, SessionStatus } from './storage.ts';
+export { SessionStorage, StoredSession, StoredMessage, SessionStatus, StorageBackend, FileStorageBackend } from './storage.ts';
+export { StreamingMessageState, TelegramRateLimiter, DEFAULT_STREAMING_CONFIG } from './streaming.ts';
+export { HealthMonitor, DEFAULT_HEALTH_CONFIG, isProcessAlive, gracefulTerminate } from './health.ts';
+export { HistoryInjector, DEFAULT_HISTORY_CONFIG, estimateTokens } from './history.ts';
+export { formatForTelegram } from './bot/formatters/markdown.ts';
+export { escapeHtml } from './bot/formatters/escape.ts';
+export { MetricsCollector, DEFAULT_METRICS_CONFIG, SessionMetrics, MessageMetrics, ApiMetrics } from './metrics.ts';
