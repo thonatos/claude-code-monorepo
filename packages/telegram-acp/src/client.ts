@@ -10,6 +10,10 @@ export interface TelegramAcpClientOpts {
   onThoughtFlush: (text: string) => Promise<void>;
   log: (msg: string) => void;
   showThoughts: boolean;
+
+  // 流式消息支持
+  sendMessage?: (text: string, parseMode?: 'HTML') => Promise<number>;
+  editMessage?: (msgId: number, text: string, parseMode?: 'HTML') => Promise<number>;
 }
 
 export class TelegramAcpClient implements acp.Client {
@@ -18,6 +22,19 @@ export class TelegramAcpClient implements acp.Client {
   private opts: TelegramAcpClientOpts;
   private lastTypingAt = 0;
   private static readonly TYPING_INTERVAL_MS = 5_000;
+
+  // 流式消息追踪
+  private thoughtMsgId: number | null = null;
+  private textMsgId: number | null = null;
+  private toolMsgIds: Map<string, number> = new Map();
+
+  // 累积计数器
+  private thoughtCharCount: number = 0;
+  private textCharCount: number = 0;
+
+  // 常量
+  private static readonly FIRST_SEND_THRESHOLD = 30;
+  private static readonly EDIT_THRESHOLD = 80;
 
   constructor(opts: TelegramAcpClientOpts) {
     this.opts = opts;
