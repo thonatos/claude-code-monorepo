@@ -219,10 +219,32 @@ export class TelegramAcpClient implements acp.Client {
   }
 
   async flush(): Promise<string> {
-    await this.maybeFlushThoughts();
+    await this.finalizeAll();
     const text = this.chunks.join("");
     this.chunks = [];
     return text;
+  }
+
+  private async finalizeThought(): Promise<void> {
+    if (this.thoughtChunks.length > 0 && this.thoughtMsgId) {
+      const formatted = this.formatThoughtFinal(this.thoughtChunks.join(""));
+      await this.opts.editMessage?.(this.thoughtMsgId, formatted, "HTML");
+    }
+    this.thoughtChunks = [];
+    this.thoughtCharCount = 0;
+  }
+
+  private async finalizeText(): Promise<void> {
+    if (this.chunks.length > 0 && this.textMsgId) {
+      const text = this.chunks.join("");
+      await this.opts.editMessage?.(this.textMsgId, text, "HTML");
+    }
+    this.textCharCount = 0;
+  }
+
+  private async finalizeAll(): Promise<void> {
+    await this.finalizeThought();
+    await this.finalizeText();
   }
 
   private async maybeFlushThoughts(): Promise<void> {
