@@ -50,6 +50,19 @@ export class TelegramAcpClient implements acp.Client {
     };
   }
 
+  /**
+   * Reset streaming state for new prompt.
+   */
+  reset(): void {
+    this.thoughtMsgId = null;
+    this.textMsgId = null;
+    this.toolMsgIds.clear();
+    this.thoughtCharCount = 0;
+    this.textCharCount = 0;
+    this.thoughtChunks = [];
+    this.chunks = [];
+  }
+
   async requestPermission(
     params: acp.RequestPermissionRequest
   ): Promise<acp.RequestPermissionResponse> {
