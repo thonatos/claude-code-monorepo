@@ -4,7 +4,7 @@
 
 import fs from "node:fs";
 import type * as acp from "@agentclientprotocol/sdk";
-import { escapeHtml } from "./bot.ts";
+import { escapeHtml, formatForTelegram } from "./bot.ts";
 
 export interface TelegramAcpClientOpts {
   sendTyping?: () => Promise<void>;
@@ -154,12 +154,12 @@ export class TelegramAcpClient implements acp.Client {
 
           // 首次发送
           if (!this.textMsgId && this.textCharCount >= TelegramAcpClient.FIRST_SEND_THRESHOLD) {
-            const text = this.chunks.join("");
+            const text = formatForTelegram(this.chunks.join(""));
             this.textMsgId = await this.opts.sendMessage?.(text, "HTML") ?? null;
           }
           // 后续编辑
           else if (this.textMsgId && this.textCharCount >= TelegramAcpClient.EDIT_THRESHOLD) {
-            const text = this.chunks.join("");
+            const text = formatForTelegram(this.chunks.join(""));
             await this.opts.editMessage?.(this.textMsgId, text, "HTML");
             this.textCharCount = 0;
           }
@@ -260,9 +260,10 @@ export class TelegramAcpClient implements acp.Client {
 
   private async finalizeText(): Promise<void> {
     if (this.chunks.length > 0 && this.textMsgId) {
-      const text = this.chunks.join("");
+      const text = formatForTelegram(this.chunks.join(""));
       await this.opts.editMessage?.(this.textMsgId, text, "HTML");
     }
+    this.chunks = [];
     this.textCharCount = 0;
   }
 
