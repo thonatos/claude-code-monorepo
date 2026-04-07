@@ -143,15 +143,38 @@ export class TelegramAcpClient implements acp.Client {
 
     switch (update.sessionUpdate) {
       case "agent_message_chunk":
-        await this.maybeFlushThoughts();
+        // 先完成 thought
+        await this.finalizeThought();
+
         if (update.content.type === "text") {
           this.chunks.push(update.content.text);
+          this.textCharCount += update.content.text.length;
+
+          // 首次发送
+          if (!this.textMsgId && this.textCharCount >= TelegramAcpClient.FIRST_SEND_THRESHOLD) {
+            const text = this.chunks.join("");
+            this.textMsgId = await this.opts.sendMessage?.(text, "HTML") ?? null;
+          }
+          // 后续编辑
+          else if (this.textMsgId && this.textCharCount >= TelegramAcpClient.EDIT_THRESHOLD) {
+            const text = this.chunks.join("");
+            await this.opts.editMessage?.(this.textMsgId, text, "HTML");
+            this.textCharCount = 0;
+          }
         }
         await this.maybeSendTyping();
         break;
 
       case "tool_call":
-        await this.maybeFlushThoughts();
+        await this.finalizeThought();
+
+        const toolKey = update.toolCallId;
+        const formatted = this.formatToolCall(update);
+
+        if (!this.toolMsgIds.has(toolKey)) {
+          const msgId = await this.opts.sendMessage?.(formatted, "HTML") ?? 0;
+          this.toolMsgIds.set(toolKey, msgId);
+        }
         this.opts.log(`[tool] ${update.title} (${update.status})`);
         await this.maybeSendTyping();
         break;
@@ -178,21 +201,10 @@ export class TelegramAcpClient implements acp.Client {
         break;
 
       case "tool_call_update":
-        if (update.status === "completed" && update.content) {
-          for (const c of update.content) {
-            if (c.type === "diff") {
-              const diff = c as acp.Diff;
-              const header = `--- ${diff.path}`;
-              const lines: string[] = [header];
-              if (diff.oldText != null) {
-                for (const l of diff.oldText.split("\n")) lines.push(`- ${l}`);
-              }
-              if (diff.newText != null) {
-                for (const l of diff.newText.split("\n")) lines.push(`+ ${l}`);
-              }
-              this.chunks.push("\n```diff\n" + lines.join("\n") + "\n```\n");
-            }
-          }
+        const msgId = this.toolMsgIds.get(update.toolCallId);
+        if (msgId && update.status) {
+          const formatted = this.formatToolCallUpdate(update);
+          await this.opts.editMessage?.(msgId, formatted, "HTML");
         }
         if (update.status) {
           this.opts.log(`[tool] ${update.toolCallId} → ${update.status}`);
