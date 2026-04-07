@@ -159,9 +159,19 @@ export class TelegramAcpClient implements acp.Client {
       case "agent_thought_chunk":
         if (update.content.type === "text") {
           const text = update.content.text;
-          this.opts.log(`[thought] ${text.length > 80 ? text.substring(0, 80) + "..." : text}`);
-          if (this.opts.showThoughts) {
-            this.thoughtChunks.push(text);
+          this.thoughtChunks.push(text);
+          this.thoughtCharCount += text.length;
+
+          // 首次发送（快速展示）
+          if (!this.thoughtMsgId && this.thoughtCharCount >= TelegramAcpClient.FIRST_SEND_THRESHOLD) {
+            const formatted = this.formatThought(this.thoughtChunks.join(""));
+            this.thoughtMsgId = await this.opts.sendMessage?.(formatted, "HTML") ?? null;
+          }
+          // 后续编辑（批量阈值）
+          else if (this.thoughtMsgId && this.thoughtCharCount >= TelegramAcpClient.EDIT_THRESHOLD) {
+            const formatted = this.formatThought(this.thoughtChunks.join(""));
+            await this.opts.editMessage?.(this.thoughtMsgId, formatted, "HTML");
+            this.thoughtCharCount = 0;
           }
         }
         await this.maybeSendTyping();
