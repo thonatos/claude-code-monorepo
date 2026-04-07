@@ -4,6 +4,7 @@
 
 import fs from "node:fs";
 import type * as acp from "@agentclientprotocol/sdk";
+import { escapeHtml } from "./bot.ts";
 
 export interface TelegramAcpClientOpts {
   sendTyping?: () => Promise<void>;
@@ -61,6 +62,62 @@ export class TelegramAcpClient implements acp.Client {
     this.textCharCount = 0;
     this.thoughtChunks = [];
     this.chunks = [];
+  }
+
+  /**
+   * Format thought message during thinking process.
+   */
+  private formatThought(text: string): string {
+    const escaped = escapeHtml(text);
+    return `<i>💭 Thinking...</i>\n${escaped}`;
+  }
+
+  /**
+   * Format thought message after thinking is complete.
+   */
+  private formatThoughtFinal(text: string): string {
+    const escaped = escapeHtml(text);
+    return `<i>💭 Thought complete</i>\n${escaped}`;
+  }
+
+  /**
+   * Format tool call message (without content).
+   */
+  private formatToolCall(update: { title: string; status: string }): string {
+    const icon = update.status === 'running' ? '⏳' :
+                 update.status === 'completed' ? '✅' : '❌';
+    const title = escapeHtml(update.title);
+    return `<b>${icon} 🔧 ${title}</b>`;
+  }
+
+  /**
+   * Format tool call update message (with content).
+   */
+  private formatToolCallUpdate(update: { toolCallId: string; status?: string; title?: string; content?: any[] }): string {
+    const icon = update.status === 'running' ? '⏳' :
+                 update.status === 'completed' ? '✅' : '❌';
+    const title = escapeHtml(update.title ?? 'Tool');
+    const content = update.content ? this.formatToolContent(update.content) : '';
+    return `<b>${icon} 🔧 ${title}</b>\n${content}`;
+  }
+
+  /**
+   * Format tool content (text and diff blocks).
+   */
+  private formatToolContent(content: any[]): string {
+    const parts: string[] = [];
+    for (const c of content) {
+      if (c.type === 'text') {
+        parts.push(escapeHtml(c.text));
+      } else if (c.type === 'diff') {
+        const diff = c;
+        const lines = [`--- ${diff.path}`];
+        if (diff.oldText) lines.push(...diff.oldText.split('\n').map((l: string) => `- ${l}`));
+        if (diff.newText) lines.push(...diff.newText.split('\n').map((l: string) => `+ ${l}`));
+        parts.push(`<pre><code>${escapeHtml(lines.join('\n'))}</code></pre>`);
+      }
+    }
+    return parts.join('\n');
   }
 
   async requestPermission(
