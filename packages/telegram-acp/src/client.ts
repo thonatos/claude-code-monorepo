@@ -83,9 +83,10 @@ export class TelegramAcpClient implements acp.Client {
   /**
    * Format tool call message (without content).
    */
-  private formatToolCall(update: { title: string; status: string }): string {
-    const icon = update.status === 'running' ? '⏳' :
-                 update.status === 'completed' ? '✅' : '❌';
+  private formatToolCall(update: { title: string; status?: string }): string {
+    const status = update.status ?? '';
+    const icon = status === 'running' ? '⏳' :
+                 status === 'completed' ? '✅' : '❌';
     const title = escapeHtml(update.title);
     return `<b>${icon} 🔧 ${title}</b>`;
   }
@@ -93,9 +94,10 @@ export class TelegramAcpClient implements acp.Client {
   /**
    * Format tool call update message (with content).
    */
-  private formatToolCallUpdate(update: { toolCallId: string; status?: string; title?: string; content?: any[] }): string {
-    const icon = update.status === 'running' ? '⏳' :
-                 update.status === 'completed' ? '✅' : '❌';
+  private formatToolCallUpdate(update: { toolCallId: string; status?: string | null; title?: string | null; content?: any[] | null }): string {
+    const status = update.status ?? '';
+    const icon = status === 'running' ? '⏳' :
+                 status === 'completed' ? '✅' : '❌';
     const title = escapeHtml(update.title ?? 'Tool');
     const content = update.content ? this.formatToolContent(update.content) : '';
     return `<b>${icon} 🔧 ${title}</b>\n${content}`;

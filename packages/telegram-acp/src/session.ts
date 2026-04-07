@@ -37,6 +37,9 @@ export interface SessionManagerOpts {
   log: (msg: string) => void;
   onReply: (userId: string, text: string) => Promise<void>;
   sendTyping: (userId: string) => Promise<void>;
+  // Streaming message support
+  sendMessage?: (userId: string, text: string, parseMode?: 'HTML') => Promise<number>;
+  editMessage?: (userId: string, msgId: number, text: string, parseMode?: 'HTML') => Promise<number>;
 }
 
 export class SessionManager {
@@ -184,6 +187,13 @@ export class SessionManager {
       onThoughtFlush: (text: string) => this.opts.onReply(userId, text),
       log: (msg: string) => this.opts.log(`[${userId}] ${msg}`),
       showThoughts: this.opts.showThoughts,
+      // Streaming message support
+      sendMessage: async (text: string, parseMode?: 'HTML') => {
+        return this.opts.sendMessage?.(userId, text, parseMode) ?? 0;
+      },
+      editMessage: async (msgId: number, text: string, parseMode?: 'HTML') => {
+        return this.opts.editMessage?.(userId, msgId, text, parseMode) ?? 0;
+      },
     });
 
     const { process, connection, sessionId } = await this.spawnAgent(userId, client);
@@ -241,6 +251,13 @@ export class SessionManager {
       },
       log: (msg: string) => this.opts.log(`[${userId}] ${msg}`),
       showThoughts: this.opts.showThoughts,
+      // Streaming message support
+      sendMessage: async (text: string, parseMode?: 'HTML') => {
+        return this.opts.sendMessage?.(userId, text, parseMode) ?? 0;
+      },
+      editMessage: async (msgId: number, text: string, parseMode?: 'HTML') => {
+        return this.opts.editMessage?.(userId, msgId, text, parseMode) ?? 0;
+      },
     });
 
     const { process, connection, sessionId } = await this.spawnAgent(userId, client);

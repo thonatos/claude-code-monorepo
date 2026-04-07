@@ -46,6 +46,23 @@ export class TelegramAcpBridge {
           await this.bot.api.sendChatAction(userId, "typing");
         }
       },
+      // Streaming message support
+      sendMessage: async (userId: string, text: string, parseMode?: 'HTML') => {
+        if (!this.bot) return 0;
+        const msg = await this.bot.api.sendMessage(userId, text, {
+          parse_mode: parseMode
+        });
+        return msg.message_id;
+      },
+      editMessage: async (userId: string, msgId: number, text: string, parseMode?: 'HTML') => {
+        if (!this.bot) return 0;
+        const result = await this.bot.api.editMessageText(userId, msgId, text, {
+          parse_mode: parseMode
+        });
+        // editMessageText returns true if no change, or Edited object if changed
+        if (result === true) return msgId;
+        return result.message_id;
+      },
     });
 
     // Restore persisted sessions

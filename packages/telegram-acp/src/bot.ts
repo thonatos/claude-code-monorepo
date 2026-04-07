@@ -267,6 +267,9 @@ async function messageHandler(ctx: Context) {
   const session = acpCtx.session;
 
   try {
+    // Reset streaming state for new prompt
+    session.client.reset();
+
     // 4. Send prompt to ACP agent
     const result = await session.connection.prompt({
       sessionId: session.sessionId,
@@ -286,23 +289,10 @@ async function messageHandler(ctx: Context) {
     // Record agent reply
     await acpCtx.sessionManager.recordMessage(userId, 'agent', replyText);
 
-    // 5. Clear reaction + send reply
+    // 5. Clear reaction (streaming messages already sent)
     try {
       await ctx.react([]); // Clear reaction
     } catch {}
-    if (replyText.trim()) {
-      const formatted = formatForTelegram(replyText);
-      try {
-        await ctx.reply(formatted, { parse_mode: "HTML" });
-      } catch (err) {
-        // Fallback to plain text on parse error
-        if (err instanceof GrammyError && err.description?.includes("Cannot parse entities")) {
-          await ctx.reply(replyText);
-        } else {
-          throw err;
-        }
-      }
-    }
   } catch (err) {
     try {
       await ctx.react([]); // Clear reaction on error
