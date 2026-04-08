@@ -2,186 +2,129 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Mandatory Rules
 
-A pnpm monorepo containing `telegram-acp` - a bridge that connects Telegram direct messages to ACP-compatible AI agents via grammy Bot API.
+The following rules MUST be followed. Violation will cause implementation failure.
 
-## Workflow Requirements
+### 1.1 Workflow Requirements
 
-**REQUIRED: Use Superpowers for all implementation work**
+Before ANY implementation work, complete these steps in order:
 
-Before ANY implementation, you MUST:
+1. Brainstorming - Use `superpowers:brainstorming` to clarify requirements
+2. Spec - Write design spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
+3. Plan - Use `superpowers:writing-plans` to create implementation plan
+4. Execute - Use `superpowers:subagent-driven-development` or `superpowers:executing-plans`
 
-1. **Brainstorming** - Use `superpowers:brainstorming` to clarify requirements and design
-2. **Spec** - Write design spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
-3. **Plan** - Use `superpowers:writing-plans` to create implementation plan
-4. **Execute** - Use `superpowers:subagent-driven-development` or `superpowers:executing-plans` to execute plan
+**NEVER skip steps or start implementation without approved spec and plan.**
 
-**Never skip these steps or start implementation without approved spec and plan.**
+### 1.2 Documentation Sync
 
-## Documentation Requirements
+After code changes, update documentation synchronously:
 
-**Documentation must be updated synchronously after code changes:**
-
-1. **Package README.md** - `packages/<package>/README.md`
-2. **Root README.md** - `<root>/README.md`
+1. Package README: `packages/<package>/README.md`
+2. Root README: `<root>/README.md`
 
 **Trigger conditions**: Architecture changes, new features/APIs, config format changes, CLI command changes
 
-## Language Policy
+### 1.3 Language Policy
 
-**All documentation and code comments must be in English.**
+All documentation and code comments MUST be in English.
 
-## Package Management
+### 1.4 Package Management
 
-**Use `pnpm` for all package operations:**
+Use `pnpm` exclusively. NEVER use `npm` or `yarn`.
 
-```bash
-pnpm install          # Install dependencies
-pnpm add <pkg>        # Add dependency to workspace root
-pnpm --filter <pkg> add <dep>  # Add dependency to specific package
-```
+## Quick Reference
 
-**Do NOT use `npm` or `yarn` commands.**
+Reference information for daily development.
 
-## Commands
-
-### Build & Develop
+### Package Management
 
 ```bash
-cd packages/telegram-acp
-pnpm run build     # Compile TypeScript to dist/
-pnpm run dev       # Watch mode
-pnpm run start     # Run compiled CLI
+pnpm install                              # Install dependencies
+pnpm add <pkg>                            # Add to workspace root
+pnpm --filter <package> add <dep>         # Add to specific package
 ```
 
-### CLI Commands
-
-**Development mode:**
+### Build Commands
 
 ```bash
-pnpm --filter telegram-acp run start -- --preset <name>
-pnpm --filter telegram-acp run start -- --config <file>
-pnpm --filter telegram-acp run start -- agents
+pnpm --filter telegram-acp run build      # Compile TypeScript
+pnpm --filter telegram-acp run dev        # Watch mode
 ```
 
-**After installation:**
+### Package-specific Usage
 
-```bash
-pnpx telegram-acp --preset <name>
-pnpx telegram-acp --config <file>
-pnpx telegram-acp agents
+See individual package READMEs:
+- [telegram-acp](packages/telegram-acp/README.md) - CLI commands, agent presets, configuration
+
+## Project Context
+
+Understanding the project structure and key concepts.
+
+### Overview
+
+A pnpm monorepo containing `telegram-acp` - a bridge that connects Telegram direct messages to ACP-compatible AI agents via grammy Bot API.
+
+### Architecture
+
 ```
-
-### Built-in Agent Presets
-
-`copilot`, `claude`, `codex`
-
-## Architecture
-
-```
-packages/telegram-acp/
-├── src/
-│   ├── bin/telegram-acp.ts   # CLI entry point, arg parsing
-│   ├── index.ts              # Package exports
-│   ├── bridge.ts             # Orchestration: creates bot + session manager
-│   ├── telegram-api.ts       # Bot API wrapper for dependency injection
-│   ├── client.ts             # ACP Client implementation
-│   ├── config.ts             # Config loading, presets, defaults
-│   ├── health.ts             # Health monitoring, process management
-│   ├── history.ts            # History injection, token estimation
-│   ├── bot/
-│   │   ├── index.ts          # grammy Bot setup, exports BotApi type
-│   │   ├── middleware/
-│   │   │   ├── auth.ts       # Whitelist check or open mode
-│   │   │   └── session.ts    # Inject UserSession into context
-│   │   ├── handlers/
-│   │   │   ├── commands.ts   # /start, /help, /status, /restart, /clear
-│   │   │   └── message.ts    # Forward to ACP agent
-│   │   └── formatters/
-│   │       ├── markdown.ts   # Markdown to HTML conversion
-│   │       └── escape.ts     # HTML escape utilities
-│   ├── session/
-│   │   ├── index.ts          # SessionManager orchestrator
-│   │   ├── lifecycle.ts      # Session CRUD, restore, message recording
-│   │   ├── spawn.ts          # Agent process spawn + ACP connection
-│   │   ├── idle-manager.ts   # Idle timeout + session eviction
-│   │   └── types.ts          # UserSession, SessionManagerOpts types
-│   ├── storage/
-│   │   ├── index.ts          # Storage exports
-│   │   ├── file-storage.ts   # File-based storage with batch flush
-│   │   └── types.ts          # StoredSession, StoredMessage types
-│   └── streaming/
-│       ├── index.ts          # Streaming exports
-│       ├── state.ts          # StreamingMessageState coordinator
-│       ├── message-stream.ts # Single message stream state
-│       ├── rate-limiter.ts   # TelegramRateLimiter
-│       ├── formatting.ts     # markdownToHtml, escapeHtml, formatThought
-│       └── types.ts          # StreamingConfig, MessageCallbacks
+packages/telegram-acp/src/
+├── bin/telegram-acp.ts      # CLI entry point
+├── bridge.ts                # Orchestration layer
+├── telegram-api.ts          # Bot API wrapper
+├── client.ts                # ACP client
+├── config.ts                # Config loading & presets
+├── health.ts                # Health monitoring
+├── history.ts               # History injection
+├── bot/
+│   ├── index.ts             # grammy Bot setup
+│   ├── middleware/          # Auth, session
+│   ├── handlers/            # Commands, messages
+│   └── formatters/          # Markdown, escape
+├── session/
+│   ├── index.ts             # SessionManager
+│   ├── lifecycle.ts         # Session CRUD
+│   ├── spawn.ts             # Agent spawn
+│   ├── idle-manager.ts      # Timeout management
+│   └── types.ts             # Type definitions
+├── storage/
+│   ├── index.ts             # Storage exports
+│   ├── file-storage.ts      # File implementation
+│   └── types.ts             # Storage types
+└── streaming/
+    ├── index.ts             # Streaming exports
+    ├── state.ts             # Message coordination
+    ├── message-stream.ts    # Single message state
+    ├── rate-limiter.ts      # API rate limiting
+    ├── formatting.ts        # Markdown/HTML conversion
+    └── types.ts             # Streaming types
 ```
 
 **Key flows:**
 
-1. **Startup**: CLI parses args → loadConfig → TelegramAcpBridge.start() → create TelegramApiWrapper + SessionManager + Bot
-2. **Message**: grammy middleware chain (auth → session) → messageHandler → ACP prompt → agent subprocess → reply
-3. **Session**: One ACP session per Telegram user, spawned via stdio, auto-cleanup after idle timeout
+1. **Startup**: CLI → loadConfig → TelegramAcpBridge.start() → Bot + SessionManager
+2. **Message**: middleware chain → messageHandler → ACP prompt → agent subprocess → reply
+3. **Session**: One ACP session per Telegram user, spawned via stdio, auto-cleanup
 
-**Dependency injection:**
-- `TelegramApiWrapper` encapsulates Bot API for cleaner dependency injection
-- `SessionManager` uses injected callbacks for Telegram operations
-- Modules are decoupled via clear interfaces (types.ts in each module)
+### Session Persistence
 
-## Session Persistence
+Location: `~/.telegram-acp/sessions/{userId}/{sessionId}.json`
 
-Sessions are persisted to `~/.telegram-acp/sessions/{userId}/{sessionId}.json`:
+Contents:
 - Session metadata (agent config, timestamps, status)
 - Conversation history (user prompts + agent replies)
 - Automatic restoration on service restart
 
-**Commands:**
-- `/start` - Create new session or restore existing one
-- `/status` - Show session details (ID, messages, timestamps)
-- `/restart` - Terminate current session and create new one
+**Telegram commands:**
+- `/start` - Create or restore session
+- `/status` - Show session details
+- `/restart` - Terminate and create new session
 - `/clear` - Clear conversation history
 
-## Configuration
+### Limitations
 
-Runtime files stored in `~/.telegram-acp/` (config.yaml)
-
-Config file format (YAML):
-```yaml
-telegram:
-  botToken: "..."
-
-agent:
-  preset: claude
-
-proxy: "socks5://user:pass@host:port"
-
-allowedUsers:
-  - "123456"
-
-open: false
-
-reaction:
-  enabled: true
-  emoji: "👍"
-
-session:
-  idleTimeoutMs: 86400000
-  maxConcurrentUsers: 10
-
-history:
-  maxMessages: null  # null = unlimited
-  maxDays: null      # null = unlimited
-
-showThoughts: false
-```
-
-## Notes
-
-- Requires Node.js 20+
-- Only processes direct messages (group chats ignored)
+- Direct messages only (group chats ignored)
 - Permission requests auto-approved
 - MCP servers not used
-- Proxy support via SOCKS5
+- Requires Node.js 20+
