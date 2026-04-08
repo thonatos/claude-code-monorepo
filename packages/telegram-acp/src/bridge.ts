@@ -27,6 +27,9 @@ export class TelegramAcpBridge {
   async start(): Promise<void> {
     this.log("[telegram-acp] Starting...");
 
+    // Get logging config
+    const logLevel = this.config.observability?.logging?.level || 'info';
+
     // Create session manager with callbacks that will use telegramApi (set after bot creation)
     this.sessionManager = new SessionManager({
       agentCommand: this.config.agent.command,
@@ -38,6 +41,7 @@ export class TelegramAcpBridge {
       historyConfig: this.config.history,
       showThoughts: this.config.agent.showThoughts,
       log: this.log,
+      logLevel,
       onReply: async (userId: string, text: string) => {
         if (this.telegramApi) {
           await this.telegramApi.sendMessage(userId, text);
@@ -65,7 +69,7 @@ export class TelegramAcpBridge {
     this.bot = createBot(this.config.telegram.botToken, this.config, this.sessionManager);
 
     // Create Telegram API wrapper with bot's API
-    this.telegramApi = new TelegramApiWrapper(this.bot.api);
+    this.telegramApi = new TelegramApiWrapper(this.bot.api, this.config.telegram.botToken);
 
     await startBot(this.bot);
 

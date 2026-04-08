@@ -5,7 +5,12 @@
 import type { BotApi } from "./bot/index.ts";
 
 export class TelegramApiWrapper {
-  constructor(private api: BotApi) {}
+  constructor(private api: BotApi, public readonly token: string) {}
+
+  async getFile(fileId: string): Promise<{ file_path: string }> {
+    const file = await this.api.getFile(fileId);
+    return { file_path: file.file_path! };
+  }
 
   async sendMessage(userId: string, text: string, parseMode?: 'HTML'): Promise<number> {
     try {
