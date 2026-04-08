@@ -10,7 +10,6 @@ import { DEFAULT_STREAMING_CONFIG } from './types.ts';
 export class StreamingMessageState {
   private thoughtStream: MessageStream;
   private textStream: MessageStream;
-  private toolStreams: Map<string, MessageStream> = new Map();
   private lastTypingAt: number = 0;
 
   constructor(
@@ -24,7 +23,6 @@ export class StreamingMessageState {
   reset(): void {
     this.thoughtStream.reset();
     this.textStream.reset();
-    this.toolStreams.clear();
   }
 
   async appendThought(chunk: string): Promise<void> {
@@ -49,35 +47,6 @@ export class StreamingMessageState {
 
   async finalizeText(): Promise<string> {
     return await this.textStream.finalize();
-  }
-
-  async updateToolCall(toolCallId: string, formatter: () => string): Promise<void> {
-    if (this.thoughtStream.hasContent()) {
-      await this.finalizeThought();
-    }
-
-    let stream = this.toolStreams.get(toolCallId);
-
-    if (!stream) {
-      stream = new MessageStream('tool', this.callbacks, this.config, formatter);
-      this.toolStreams.set(toolCallId, stream);
-    }
-
-    if (!stream.getMessageId()) {
-      const text = formatter();
-      const msgId = await this.callbacks.sendMessage(text, 'HTML');
-      stream.setMessageId(msgId);
-    }
-
-    await this.maybeSendTyping();
-  }
-
-  async editToolCall(toolCallId: string, formatter: () => string): Promise<void> {
-    const stream = this.toolStreams.get(toolCallId);
-    if (stream && stream.getMessageId()) {
-      const text = formatter();
-      await this.callbacks.editMessage(stream.getMessageId()!, text, 'HTML');
-    }
   }
 
   async finalizeAll(): Promise<string> {

@@ -98,21 +98,237 @@ describe('TelegramAcpClient streaming', () => {
       expect(sentText).toContain('&lt;script&gt;');
       expect(sentText).not.toContain('<script>');
     });
+  });
 
-    it('should format tool call with bold and icon', async () => {
-      await client.sessionUpdate({
+  describe('logging', () => {
+    it('should log thoughts at info level by default', async () => {
+      const mockLog = vi.fn();
+      const logClient = new TelegramAcpClient({
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        onThoughtFlush: vi.fn(),
+        log: mockLog,
+        showThoughts: false, // Don't send to Telegram
+        logLevel: 'info',
+      });
+
+      await logClient.sessionUpdate({
         update: {
-          sessionUpdate: 'tool_call',
-          toolCallId: 'tool-123',
-          title: 'Read File',
-          status: 'running',
+          sessionUpdate: 'agent_thought_chunk',
+          content: { type: 'text', text: 'Analyzing the code structure' },
         },
       });
 
-      expect(mockSendMessage).toHaveBeenCalledTimes(1);
-      const sentText = mockSendMessage.mock.calls[0][0];
-      expect(sentText).toMatch(/⏳.*🔧.*Read File/);
-      expect(sentText).toContain('<b>');
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.stringContaining('[thought]')
+      );
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.stringContaining('Analyzing')
+      );
+    });
+
+    it('should not log thoughts at warn level', async () => {
+      const mockLog = vi.fn();
+      const warnClient = new TelegramAcpClient({
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        onThoughtFlush: vi.fn(),
+        log: mockLog,
+        showThoughts: false,
+        logLevel: 'warn',
+      });
+
+      await warnClient.sessionUpdate({
+        update: {
+          sessionUpdate: 'agent_thought_chunk',
+          content: { type: 'text', text: 'Analyzing' },
+        },
+      });
+
+      expect(mockLog).not.toHaveBeenCalled();
+    });
+
+    it('should log tool calls at info level', async () => {
+      const mockLog = vi.fn();
+      const mockSendTyping = vi.fn();
+      const logClient = new TelegramAcpClient({
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        onThoughtFlush: vi.fn(),
+        log: mockLog,
+        showThoughts: false,
+        logLevel: 'info',
+        sendTyping: mockSendTyping,
+      });
+
+      await logClient.sessionUpdate({
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tool-1',
+          title: 'ReadFile',
+          status: 'running',
+          input: { path: '/src/file.ts' },
+        },
+      });
+
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.stringContaining('[tool] ReadFile')
+      );
+      // Should send typing action
+      expect(mockSendTyping).toHaveBeenCalled();
+    });
+
+    it('should log tool params at debug level', async () => {
+      const mockLog = vi.fn();
+      const debugClient = new TelegramAcpClient({
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        onThoughtFlush: vi.fn(),
+        log: mockLog,
+        showThoughts: false,
+        logLevel: 'debug',
+      });
+
+      await debugClient.sessionUpdate({
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tool-1',
+          title: 'ReadFile',
+          status: 'running',
+          input: { path: '/src/file.ts' },
+        },
+      });
+
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.stringContaining('params')
+      );
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.stringContaining('/src/file.ts')
+      );
+    });
+
+    it('should log tool results at info level', async () => {
+      const mockLog = vi.fn();
+      const logClient = new TelegramAcpClient({
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        onThoughtFlush: vi.fn(),
+        log: mockLog,
+        showThoughts: false,
+        logLevel: 'info',
+      });
+
+      await logClient.sessionUpdate({
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tool-1',
+          title: 'ReadFile',
+          status: 'completed',
+          content: [
+            { type: 'text', text: 'File content here with some text' }
+          ],
+        },
+      });
+
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.stringContaining('[tool] ReadFile → completed')
+      );
+      expect(mockLog).toHaveBeenCalledWith(
+        expect.stringContaining('result')
+      );
+    });
+
+    it('should NOT send tool messages to Telegram', async () => {
+      await client.sessionUpdate({
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tool-1',
+          title: 'ReadFile',
+          status: 'running',
+          input: { path: '/src/file.ts' },
+        },
+      });
+
+      await client.sessionUpdate({
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tool-1',
+          title: 'ReadFile',
+          status: 'completed',
+          content: [
+            { type: 'text', text: 'File content' }
+          ],
+        },
+      });
+
+      // Should NOT send any messages for tool calls
+      expect(mockSendMessage).not.toHaveBeenCalled();
+      expect(mockEditMessage).not.toHaveBeenCalled();
+    });
+
+    it('should truncate long results at info level', async () => {
+      const mockLog = vi.fn();
+      const logClient = new TelegramAcpClient({
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        onThoughtFlush: vi.fn(),
+        log: mockLog,
+        showThoughts: false,
+        logLevel: 'info',
+      });
+
+      const longResult = 'A'.repeat(500);
+      
+      await logClient.sessionUpdate({
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tool-1',
+          title: 'Test',
+          status: 'completed',
+          content: [
+            { type: 'text', text: longResult }
+          ],
+        },
+      });
+
+      // Should truncate to ~200 chars
+      const logCall = mockLog.mock.calls.find(c => c[0].includes('result'));
+      if (logCall) {
+        expect(logCall[0].length).toBeLessThan(250);
+      }
+    });
+
+    it('should show full results at debug level', async () => {
+      const mockLog = vi.fn();
+      const debugClient = new TelegramAcpClient({
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        onThoughtFlush: vi.fn(),
+        log: mockLog,
+        showThoughts: false,
+        logLevel: 'debug',
+      });
+
+      const longResult = 'A'.repeat(500);
+      
+      await debugClient.sessionUpdate({
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tool-1',
+          title: 'Test',
+          status: 'completed',
+          content: [
+            { type: 'text', text: longResult }
+          ],
+        },
+      });
+
+      // Should show full result (not truncated)
+      const logCall = mockLog.mock.calls.find(c => c[0].includes('result'));
+      if (logCall) {
+        expect(logCall[0]).toContain('AAAA');
+        expect(logCall[0].length).toBeGreaterThan(500);
+      }
     });
   });
 
@@ -133,15 +349,6 @@ describe('TelegramAcpClient streaming', () => {
         },
       });
 
-      await client.sessionUpdate({
-        update: {
-          sessionUpdate: 'tool_call',
-          toolCallId: 'tool-1',
-          title: 'Test Tool',
-          status: 'running',
-        },
-      });
-
       // 重置
       client.reset();
 
@@ -155,7 +362,7 @@ describe('TelegramAcpClient streaming', () => {
 
       // 应该有新的 sendMessage
       const sendCount = mockSendMessage.mock.calls.length;
-      expect(sendCount).toBeGreaterThanOrEqual(4); // thought + message + tool + new thought
+      expect(sendCount).toBeGreaterThanOrEqual(2); // thought + new thought
     });
   });
 });

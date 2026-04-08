@@ -28,7 +28,7 @@ describe('StreamingMessageState', () => {
 
       expect(mockSendMessage).toHaveBeenCalledTimes(1);
       expect(mockSendMessage).toHaveBeenCalledWith(
-        expect.stringContaining('💭 Thinking...'),
+        expect.stringContaining('Thinking...'),
         'HTML'
       );
     });

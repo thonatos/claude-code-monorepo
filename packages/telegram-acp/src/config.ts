@@ -7,6 +7,7 @@ import os from "node:os";
 import fs from "node:fs";
 import { parse as parseYaml } from "yaml";
 import type { HistoryInjectionConfig } from "./history.ts";
+import type { LogLevel } from "./utils/logger.ts";
 
 export interface AgentPreset {
   label: string;
@@ -36,7 +37,7 @@ export interface ReactionConfig {
 
 export interface ObservabilityConfig {
   logging?: {
-    level: 'debug' | 'info' | 'warn' | 'error';
+    level: LogLevel;
     format: 'text' | 'json';
   };
 }
@@ -119,7 +120,7 @@ export function defaultConfig(): TelegramAcpConfig {
     },
     observability: {
       logging: {
-        level: 'info',
+        level: 'info' as LogLevel,
         format: 'text',
       },
     },
@@ -185,8 +186,10 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
       if (fileConfig.reaction) config.reaction = fileConfig.reaction;
       if (fileConfig.observability) {
         config.observability = {
-          ...config.observability!,
-          ...fileConfig.observability,
+          logging: {
+            ...config.observability!.logging!,
+            ...fileConfig.observability?.logging,
+          },
         };
       }
 
@@ -217,6 +220,13 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
       config.agent.command = parsed.command;
       config.agent.args = parsed.args;
     }
+  }
+
+  // Apply environment variable overrides
+  const envLogLevel = process.env.TELEGRAM_ACP_LOG_LEVEL as LogLevel;
+  
+  if (envLogLevel && ['error', 'warn', 'info', 'debug'].includes(envLogLevel)) {
+    config.observability!.logging!.level = envLogLevel;
   }
 
   return config;

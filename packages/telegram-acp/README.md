@@ -11,9 +11,12 @@ Bridge Telegram direct messages to any ACP-compatible AI agent.
 - Built-in ACP agent presets
 - Auto-allow permission requests
 - Direct messages only (groups ignored)
-- Message reactions (emoji acknowledgment)
+- **Bidirectional Media Support** - Send/receive images and audio
+- **Phase-Based Reactions** - Real-time emoji feedback for processing status
 - Proxy support (SOCKS5/HTTP)
 - User whitelist for access control
+- **Clean Telegram UI** - No tool messages, only typing indicators
+- **Detailed CLI logging** - Shows thoughts, tool names, and results
 
 ## Requirements
 
@@ -111,7 +114,121 @@ session:
   maxConcurrentUsers: 10
 
 showThoughts: false
+
+# Logging configuration
+observability:
+  logging:
+    level: info              # CLI log level: error, warn, info, debug
 ```
+
+## Environment Variables
+
+Control logging behavior with environment variables:
+
+```bash
+# Set CLI log level (default: info)
+TELEGRAM_ACP_LOG_LEVEL=debug npm start
+```
+
+### Log Levels
+
+- `error` - Only errors
+- `warn` - Errors + warnings
+- `info` (default) - Thoughts + tool names + truncated results (200 chars)
+- `debug` - Full details including complete params and results
+
+## Media Support
+
+### Supported Media Types
+
+- **Images**: JPEG, PNG, GIF (photos and animations)
+- **Audio**: MP3, OGG (audio files and voice messages)
+
+### User Experience
+
+**Incoming Media Flow:**
+1. User sends image/audio to bot
+2. Bot shows 👀 reaction (acknowledgment)
+3. Bot shows 📤 reaction (downloading media)
+4. Bot shows 🤔 reaction (agent thinking)
+5. Bot shows 🔧 reaction (if tools are used)
+6. Bot sends response text
+7. Bot shows ✅ reaction (complete, shown 500ms then cleared)
+
+**Outgoing Media Flow:**
+- If agent generates images/audio, bot automatically uploads to Telegram
+- Bot shows 📥 reaction during upload
+- Files appear in chat as native Telegram media
+
+### Technical Details
+
+**Temporary Files:**
+- Downloaded media stored in `/tmp/telegram-acp/media/{userId}/`
+- Images passed via `uri` field (agent accesses via `readTextFile`)
+- Audio encoded as base64 (required by ACP spec)
+- Auto cleanup 60 seconds after processing
+- Cleanup runs even if errors occur
+
+**Examples:**
+```
+User: [Photo of code error]
+Bot: Looking at your screenshot...
+Bot: I see the issue - the function is missing a return statement...
+
+User: [Voice message describing problem]
+Bot: Processing your voice message...
+Bot: Based on your description, here's the solution...
+```
+
+## Reaction System
+
+The bot displays emoji reactions to provide real-time feedback on processing status:
+
+| Emoji | Phase | Meaning |
+|-------|-------|---------|
+| 👀 | Acknowledgment | Message received, starting processing |
+| 📤 | media_in | Downloading media from Telegram |
+| 📥 | media_out | Uploading media to Telegram |
+| 🤔 | thought | Agent is thinking/analyzing |
+| 🔧 | tool | Tool is being executed (ReadFile, Terminal, etc.) |
+| ✅ | done | Processing complete (shown 500ms then cleared) |
+
+**Behavior:**
+- Reactions are debounced (500ms minimum delay between API calls)
+- Prevents API spam during rapid state changes
+- Best-effort - failures don't block main conversation flow
+- State tracking prevents duplicate reactions for same phase
+
+## Telegram User Experience
+
+### What Users See
+
+**Clean message flow:**
+- User sends message
+- Bot shows 👀 reaction (acknowledgment)
+- Bot shows typing indicator while processing
+- Bot sends final response
+
+**No clutter:**
+- No tool call messages
+- No thinking messages
+- No status updates
+
+### What CLI Shows
+
+**Detailed logging:**
+```
+[thought] Analyzing the code structure...
+[tool] ReadFile (running)
+[tool] ReadFile → completed
+  result: import { Config } from './types...
+[tool] WriteFile (running)
+  params: {
+    "path": "/src/utils.ts"
+  }
+```
+
+This provides full visibility for debugging while keeping Telegram clean.
 
 ## Architecture
 
@@ -125,10 +242,24 @@ packages/telegram-acp/src/
 ├── config.ts                # Config loading, presets
 ├── health.ts                # Health monitoring
 ├── history.ts               # History management
+├── utils/
+│   └── logger.ts            # Logging utilities
+├── media/                   # Media handling module
+│   ├── types.ts             # Media type definitions
+│   ├── downloader.ts        # Telegram → local file
+│   ├── uploader.ts          # Local file → Telegram
+│   ├── temp-manager.ts      # Auto cleanup scheduler
+│   └── index.ts             # Media exports
+├── reaction/                # Reaction management module
+│   ├── types.ts             # Reaction phase types
+│   ├── emoji-mapping.ts     # Phase → emoji constants
+│   ├── manager.ts           # State + debouncing
+│   └── index.ts             # Reaction exports
 ├── bot/
 │   ├── index.ts             # grammy Bot setup
 │   ├── middleware/          # Auth, session middleware
 │   ├── handlers/            # Command, message handlers
+│   │   └── message.ts       # Handles text + media messages
 │   └── formatters/          # Markdown, escape utilities
 ├── session/
 │   ├── index.ts             # SessionManager entry
@@ -158,7 +289,15 @@ Runtime files stored under:
 └── sessions/                # Session persistence
     └── {userId}/
         └── {sessionId}.json
+
+/tmp/telegram-acp/
+└── media/                   # Temporary media files
+    └── {userId}/            # User-specific directory
+        └── {fileId}.jpg     # Downloaded images
+        └── {fileId}.mp3     # Downloaded audio
 ```
+
+**Auto Cleanup:** Media files deleted 60s after processing completes.
 
 ## Current Limitations
 
@@ -172,6 +311,7 @@ Runtime files stored under:
 pnpm install
 pnpm run build
 pnpm run dev  # watch mode
+pnpm run test # run tests
 ```
 
 ## License
