@@ -9,12 +9,17 @@ import { SessionManager } from "./session/index.ts";
 import { TelegramApiWrapper } from "./telegram-api.ts";
 import type { TelegramAcpConfig } from "./config.ts";
 import { defaultStorageDir } from "./config.ts";
+import { MediaDownloader, MediaUploader, TempFileManager } from "./media/index.ts";
+import type { ReactionPhase } from "./reaction/types.ts";
 
 export class TelegramAcpBridge {
   private config: TelegramAcpConfig;
   private bot: Bot | null = null;
   private sessionManager: SessionManager | null = null;
   private telegramApi: TelegramApiWrapper | null = null;
+  private downloader: MediaDownloader | null = null;
+  private uploader: MediaUploader | null = null;
+  private tempManager: TempFileManager | null = null;
   private log: (msg: string) => void;
   private stopping = false;
 
@@ -60,17 +65,35 @@ export class TelegramAcpBridge {
         if (!this.telegramApi) return 0;
         return this.telegramApi.editMessage(userId, msgId, text, parseMode);
       },
+      onMediaUpload: async (userId: string, filePath: string, type: 'image' | 'audio') => {
+        if (!this.uploader) return;
+        try {
+          if (type === 'image') {
+            await this.uploader.uploadImage(userId, filePath);
+          } else {
+            await this.uploader.uploadAudio(userId, filePath);
+          }
+        } catch (err) {
+          this.log(`[media] Upload failed: ${String(err)}`);
+        }
+      },
     });
 
-    // Restore persisted sessions
-    await this.restorePersistedSessions();
-
-    // Create and start bot
+    // Create bot first (without modules - modules will be set later)
     this.bot = createBot(this.config.telegram.botToken, this.config, this.sessionManager);
 
     // Create Telegram API wrapper with bot's API
     this.telegramApi = new TelegramApiWrapper(this.bot.api, this.config.telegram.botToken);
 
+    // Initialize media modules
+    this.tempManager = new TempFileManager();
+    this.downloader = new MediaDownloader(this.telegramApi, this.tempManager.getUserDir(''));
+    this.uploader = new MediaUploader(this.telegramApi);
+
+    // Restore persisted sessions (after telegramApi is ready)
+    await this.restorePersistedSessions();
+
+    // Start bot
     await startBot(this.bot);
 
     this.log("[telegram-acp] Started");
