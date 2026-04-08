@@ -2,7 +2,7 @@
  * History injection strategies with smart token management.
  */
 
-import type { StoredMessage } from './storage.ts';
+import type { StoredMessage } from './storage/index.js';
 
 export interface HistoryInjectionConfig {
   strategy: 'full' | 'recent' | 'smart';  // Injection strategy

@@ -4,7 +4,7 @@
 
 import fs from "node:fs";
 import type * as acp from "@agentclientprotocol/sdk";
-import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from "./streaming.ts";
+import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from "./streaming/index.js";
 
 export interface TelegramAcpClientOpts {
   sendTyping?: () => Promise<void>;
