@@ -2,16 +2,16 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import os from 'node:os';
-import { SessionStorage, StoredSession } from '../src/storage.ts';
+import { FileStorage, StoredSession } from '../src/storage/index.ts';
 
-describe('SessionStorage', () => {
-  let storage: SessionStorage;
+describe('FileStorage', () => {
+  let storage: FileStorage;
   let testDir: string;
 
   beforeEach(async () => {
     testDir = path.join(os.tmpdir(), `telegram-acp-test-${Date.now()}`);
     await fs.mkdir(testDir, { recursive: true });
-    storage = new SessionStorage(testDir);
+    storage = new FileStorage(testDir);
   });
 
   afterEach(async () => {

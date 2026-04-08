@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from '../src/streaming.ts';
+import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from '../src/streaming/index.ts';
 
 describe('StreamingMessageState - Real Streaming Simulation', () => {
   let mockSendMessage: ReturnType<typeof vi.fn>;
