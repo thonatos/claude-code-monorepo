@@ -149,16 +149,16 @@ export class TelegramAcpClient implements acp.Client {
           try {
             // Validate file exists
             if (!fs.existsSync(media.path)) {
-              console.debug(`[media] File not found: ${media.path}`);
+              this.opts.log(`[media] File not found: ${media.path}`);
               continue;
             }
 
             // Send media via callback
             await this.opts.onMediaUpload(media.path, media.type);
-            console.debug(`[media] Sent ${media.type}: ${media.path}`);
+            this.opts.log(`[media] Sent ${media.type}: ${media.path}`);
           } catch (err) {
             // Silent fail - don't block text flow
-            console.warn(`[media] Failed to send: ${String(err)}`);
+            this.opts.log(`[media] Failed to send: ${String(err)}`);
           }
         }
 
