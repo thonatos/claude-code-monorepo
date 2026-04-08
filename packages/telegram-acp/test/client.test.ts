@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import fs from 'node:fs';
 import { TelegramAcpClient } from '../src/client.ts';
+import { MarkdownMediaParser } from '../src/media/markdown-parser.ts';
 
 describe('TelegramAcpClient streaming', () => {
   let mockSendMessage: ReturnType<typeof vi.fn>;
@@ -364,5 +366,94 @@ describe('TelegramAcpClient streaming', () => {
       const sendCount = mockSendMessage.mock.calls.length;
       expect(sendCount).toBeGreaterThanOrEqual(2); // thought + new thought
     });
+  });
+});
+
+describe('Media markdown parsing', () => {
+  it('should send media when markdown detected', async () => {
+    const mockUpload = vi.fn().mockResolvedValue(undefined);
+    const mockExists = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+    const client = new TelegramAcpClient({
+      sendMessage: vi.fn(),
+      editMessage: vi.fn(),
+      onThoughtFlush: vi.fn(),
+      log: vi.fn(),
+      showThoughts: false,
+      onMediaUpload: mockUpload,
+      mediaParser: new MarkdownMediaParser(),
+    });
+
+    await client.sessionUpdate({
+      update: {
+        sessionUpdate: 'agent_message_chunk',
+        content: { type: 'text', text: '![image](/tmp/test.jpg)' },
+      },
+    });
+
+    expect(mockUpload).toHaveBeenCalledWith('/tmp/test.jpg', 'image');
+
+    mockExists.mockRestore();
+  });
+
+  it('should convert media syntax to code format', async () => {
+    const sendMessage = vi.fn().mockResolvedValue(123);
+    const editMessage = vi.fn().mockResolvedValue(123);
+    const mockExists = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+    const client = new TelegramAcpClient({
+      sendMessage,
+      editMessage,
+      onThoughtFlush: vi.fn(),
+      log: vi.fn(),
+      showThoughts: false,
+      onMediaUpload: vi.fn(),
+      mediaParser: new MarkdownMediaParser(),
+    });
+
+    await client.sessionUpdate({
+      update: {
+        sessionUpdate: 'agent_message_chunk',
+        content: { type: 'text', text: 'See ![img](/tmp/test.jpg)' },
+      },
+    });
+
+    await client.flush();
+
+    // Check that the message sent/edited contains the HTML code tag
+    // Either sendMessage or editMessage should have been called with formatted HTML
+    const allCalls = [...sendMessage.mock.calls, ...editMessage.mock.calls];
+    const formattedCall = allCalls.find(call => call[0] && typeof call[0] === 'string' && call[0].includes('![img]'));
+
+    expect(formattedCall).toBeDefined();
+    expect(formattedCall[0]).toContain('<code>![img](/tmp/test.jpg)</code>');
+
+    mockExists.mockRestore();
+  });
+
+  it('should skip non-existent files', async () => {
+    const mockUpload = vi.fn();
+    const mockExists = vi.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+    const client = new TelegramAcpClient({
+      sendMessage: vi.fn(),
+      editMessage: vi.fn(),
+      onThoughtFlush: vi.fn(),
+      log: vi.fn(),
+      showThoughts: false,
+      onMediaUpload: mockUpload,
+      mediaParser: new MarkdownMediaParser(),
+    });
+
+    await client.sessionUpdate({
+      update: {
+        sessionUpdate: 'agent_message_chunk',
+        content: { type: 'text', text: '![missing](/tmp/nonexistent.jpg)' },
+      },
+    });
+
+    expect(mockUpload).not.toHaveBeenCalled();
+
+    mockExists.mockRestore();
   });
 });

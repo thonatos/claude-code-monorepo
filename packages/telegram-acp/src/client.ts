@@ -7,6 +7,7 @@ import type * as acp from "@agentclientprotocol/sdk";
 import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from "./streaming/index.js";
 import { truncate, shouldLog, type LogLevel } from "./utils/logger.ts";
 import type { ReactionPhase } from "./reaction/types.ts";
+import { MarkdownMediaParser } from "./media/markdown-parser.ts";
 
 export interface TelegramAcpClientOpts {
   sendTyping?: () => Promise<void>;
@@ -18,6 +19,7 @@ export interface TelegramAcpClientOpts {
   logLevel?: LogLevel;
   onMediaUpload?: (path: string, type: 'image' | 'audio') => Promise<void>;
   onReactionChange?: (phase: ReactionPhase) => Promise<void>;
+  mediaParser?: MarkdownMediaParser;
 }
 
 export class TelegramAcpClient implements acp.Client {
@@ -25,13 +27,15 @@ export class TelegramAcpClient implements acp.Client {
   private streamingState: StreamingMessageState;
   private chunks: string[] = [];
   private logLevel: LogLevel;
+  private mediaParser?: MarkdownMediaParser;
 
   constructor(opts: TelegramAcpClientOpts) {
     this.opts = opts;
     this.logLevel = opts.logLevel || 'info';
-    
+    this.mediaParser = opts.mediaParser;
+
     const sendTyping = opts.sendTyping ? opts.sendTyping : async () => { };
-    
+
     this.streamingState = new StreamingMessageState(
       {
         sendMessage: opts.sendMessage,
@@ -134,6 +138,53 @@ export class TelegramAcpClient implements acp.Client {
     if (update.content.type === "text") {
       const chunk = update.content.text;
       this.chunks.push(chunk);
+
+      // Parse media BEFORE markdown-to-HTML conversion
+      if (this.opts.onMediaUpload && this.mediaParser) {
+        const fullText = this.chunks.join('');
+        const result = this.mediaParser.parse(fullText);
+
+        // Send detected media
+        for (const media of result.media) {
+          try {
+            // Validate file exists
+            if (!fs.existsSync(media.path)) {
+              console.debug(`[media] File not found: ${media.path}`);
+              continue;
+            }
+
+            // Send media via callback
+            await this.opts.onMediaUpload(media.path, media.type);
+            console.debug(`[media] Sent ${media.type}: ${media.path}`);
+          } catch (err) {
+            // Silent fail - don't block text flow
+            console.warn(`[media] Failed to send: ${String(err)}`);
+          }
+        }
+
+        // Convert media syntax to code format
+        if (result.media.length > 0) {
+          let modifiedText = fullText;
+          for (const media of result.media) {
+            // ![alt](path) → `![alt](path)`
+            modifiedText = modifiedText.replace(
+              media.syntax,
+              `\`${media.syntax}\``
+            );
+          }
+          // Update chunks with modified text
+          this.chunks = [modifiedText];
+
+          // Reset streaming state and append modified text
+          // Note: This works for single-media scenarios; multi-chunk streaming
+          // may need more sophisticated handling
+          this.streamingState.reset();
+          await this.streamingState.appendText(modifiedText);
+          return; // Skip the regular appendText below
+        }
+      }
+
+      // Continue with text streaming (will be converted to HTML later)
       await this.streamingState.appendText(chunk);
     } else if (update.content.type === "image") {
       // Agent generated image

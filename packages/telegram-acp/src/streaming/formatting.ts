@@ -14,6 +14,7 @@ export function escapeHtml(text: string): string {
  */
 export function markdownToHtml(text: string): string {
   const codeBlocks: string[] = [];
+  const inlineCodes: string[] = [];
 
   // Preserve code blocks
   let result = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, _lang, code) => {
@@ -22,8 +23,12 @@ export function markdownToHtml(text: string): string {
     return `\x00CODEBLOCK${index}\x00`;
   });
 
-  // Inline code
-  result = result.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+  // Preserve inline code (before other processing)
+  result = result.replace(/`([^`]+)`/g, (_, code) => {
+    const index = inlineCodes.length;
+    inlineCodes.push(`<code>${escapeHtml(code)}</code>`);
+    return `\x00INLINECODE${index}\x00`;
+  });
 
   // Bold
   result = result.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
@@ -34,6 +39,11 @@ export function markdownToHtml(text: string): string {
 
   // Links
   result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+  // Restore inline code
+  inlineCodes.forEach((code, index) => {
+    result = result.replace(`\x00INLINECODE${index}\x00`, code);
+  });
 
   // Restore code blocks
   codeBlocks.forEach((block, index) => {
