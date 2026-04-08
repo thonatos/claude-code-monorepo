@@ -80,6 +80,10 @@ export class SessionLifecycle {
       editMessage: async (msgId: number, text: string, parseMode?: 'HTML') => {
         return this.opts.editMessage(userId, msgId, text, parseMode);
       },
+      logLevel: this.opts.logLevel,
+      onMediaUpload: this.opts.onMediaUpload
+        ? async (path: string, type: 'image' | 'audio') => this.opts.onMediaUpload!(userId, path, type)
+        : undefined,
     });
 
     const { process, connection, sessionId } = await spawnAgent(userId, client, {
@@ -170,6 +174,10 @@ export class SessionLifecycle {
       editMessage: async (msgId: number, text: string, parseMode?: 'HTML') => {
         return this.opts.editMessage(userId, msgId, text, parseMode);
       },
+      logLevel: this.opts.logLevel,
+      onMediaUpload: this.opts.onMediaUpload
+        ? async (path: string, type: 'image' | 'audio') => this.opts.onMediaUpload!(userId, path, type)
+        : undefined,
     });
 
     const { process, connection, sessionId } = await spawnAgent(userId, client, {

@@ -5,6 +5,8 @@
 import fs from "node:fs";
 import type * as acp from "@agentclientprotocol/sdk";
 import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from "./streaming/index.js";
+import { truncate, shouldLog, type LogLevel } from "./utils/logger.ts";
+import type { ReactionPhase } from "./reaction/types.ts";
 
 export interface TelegramAcpClientOpts {
   sendTyping?: () => Promise<void>;
@@ -13,15 +15,20 @@ export interface TelegramAcpClientOpts {
   showThoughts: boolean;
   sendMessage: (text: string, parseMode?: 'HTML') => Promise<number>;
   editMessage: (msgId: number, text: string, parseMode?: 'HTML') => Promise<number>;
+  logLevel?: LogLevel;
+  onMediaUpload?: (path: string, type: 'image' | 'audio') => Promise<void>;
+  onReactionChange?: (phase: ReactionPhase) => Promise<void>;
 }
 
 export class TelegramAcpClient implements acp.Client {
   private opts: TelegramAcpClientOpts;
   private streamingState: StreamingMessageState;
   private chunks: string[] = [];
+  private logLevel: LogLevel;
 
   constructor(opts: TelegramAcpClientOpts) {
     this.opts = opts;
+    this.logLevel = opts.logLevel || 'info';
     
     const sendTyping = opts.sendTyping ? opts.sendTyping : async () => { };
     
@@ -44,6 +51,10 @@ export class TelegramAcpClient implements acp.Client {
       ...this.opts,
       ...callbacks,
     };
+  }
+
+  updateReactionCallback(callback: (phase: ReactionPhase) => Promise<void>): void {
+    this.opts.onReactionChange = callback;
   }
 
   reset(): void {
@@ -124,31 +135,82 @@ export class TelegramAcpClient implements acp.Client {
       const chunk = update.content.text;
       this.chunks.push(chunk);
       await this.streamingState.appendText(chunk);
+    } else if (update.content.type === "image") {
+      // Agent generated image
+      const imagePath = update.content.uri || update.content.data || update.content.path;
+      if (this.opts.onMediaUpload && imagePath) {
+        await this.opts.onMediaUpload(imagePath, 'image');
+      }
+    } else if (update.content.type === "audio") {
+      // Agent generated audio
+      const audioPath = update.content.uri || update.content.data || update.content.path;
+      if (this.opts.onMediaUpload && audioPath) {
+        await this.opts.onMediaUpload(audioPath, 'audio');
+      }
     }
   }
 
   private async handleThoughtChunk(update: any): Promise<void> {
-    if (!this.opts.showThoughts) return;
-    
     if (update.content.type === "text") {
-      await this.streamingState.appendThought(update.content.text);
+      const thought = update.content.text;
+
+      // Always log thoughts to CLI (default info level)
+      if (shouldLog('info', this.logLevel)) {
+        this.opts.log(`[thought] ${truncate(thought, 100)}...`);
+      }
+
+      // Trigger reaction
+      if (this.opts.onReactionChange) {
+        await this.opts.onReactionChange('thought');
+      }
+
+      // Telegram thoughts only if showThoughts enabled
+      if (this.opts.showThoughts) {
+        await this.streamingState.appendThought(thought);
+      }
     }
   }
 
   private async handleToolCall(update: any): Promise<void> {
-    const toolKey = update.toolCallId;
-    const formatted = this.formatToolCall(update);
-    await this.streamingState.updateToolCall(toolKey, () => formatted);
-    this.opts.log(`[tool] ${update.title} (${update.status})`);
+    const title = update.title;
+    const status = update.status || 'running';
+    const params = this.extractToolParams(update);
+
+    // CLI logging only
+    if (shouldLog('info', this.logLevel)) {
+      this.opts.log(`[tool] ${title} (${status})`);
+    }
+
+    if (shouldLog('debug', this.logLevel) && params) {
+      this.opts.log(`  params: ${JSON.stringify(params, null, 2)}`);
+    }
+
+    // Trigger reaction
+    if (this.opts.onReactionChange) {
+      await this.opts.onReactionChange('tool');
+    }
+
+    // Send typing action to show activity
+    if (this.opts.sendTyping) {
+      await this.opts.sendTyping();
+    }
   }
 
   private async handleToolCallUpdate(update: any): Promise<void> {
-    const toolKey = update.toolCallId;
-    const formatted = this.formatToolCallUpdate(update);
-    await this.streamingState.editToolCall(toolKey, () => formatted);
+    const title = update.title || 'Tool';
+    const status = update.status || 'completed';
+    const result = this.extractToolResult(update.content);
     
-    if (update.status) {
-      this.opts.log(`[tool] ${toolKey} → ${update.status}`);
+    // CLI logging only
+    if (shouldLog('info', this.logLevel)) {
+      this.opts.log(`[tool] ${title} → ${status}`);
+    }
+    
+    if (shouldLog('info', this.logLevel) && result) {
+      const preview = shouldLog('debug', this.logLevel) 
+        ? result 
+        : truncate(result, 200);
+      this.opts.log(`  result: ${preview}`);
     }
   }
 
@@ -161,42 +223,31 @@ export class TelegramAcpClient implements acp.Client {
     }
   }
 
-  private formatToolCall(update: { title: string; status?: string }): string {
-    const status = update.status ?? '';
-    const icon = status === 'running' ? '⏳' :
-                 status === 'completed' ? '✅' : '❌';
-    const title = this.escapeHtml(update.title);
-    return `<b>${icon} 🔧 ${title}</b>`;
+  private extractToolParams(update: any): Record<string, any> | undefined {
+    // Extract relevant params based on tool type
+    if (update.input) {
+      // Show path for file operations, command for terminal
+      if (update.title === 'ReadFile' || update.title === 'WriteFile') {
+        return { path: update.input.path };
+      }
+      if (update.title === 'Terminal') {
+        return { command: update.input.command };
+      }
+      return update.input;
+    }
+    return undefined;
   }
 
-  private formatToolCallUpdate(update: { 
-    toolCallId: string; 
-    status?: string | null; 
-    title?: string | null; 
-    content?: any[] | null 
-  }): string {
-    const status = update.status ?? '';
-    const icon = status === 'running' ? '⏳' :
-                 status === 'completed' ? '✅' : '❌';
-    const title = this.escapeHtml(update.title ?? 'Tool');
-    const content = update.content ? this.formatToolContent(update.content) : '';
-    return `<b>${icon} 🔧 ${title}</b>\n${content}`;
-  }
-
-  private formatToolContent(content: any[]): string {
-    const parts: string[] = [];
+  private extractToolResult(content: any[] | null): string | undefined {
+    if (!content) return undefined;
+    
     for (const c of content) {
       if (c.type === 'text') {
-        parts.push(this.escapeHtml(c.text));
-      } else if (c.type === 'diff') {
-        const diff = c;
-        const lines = [`--- ${diff.path}`];
-        if (diff.oldText) lines.push(...diff.oldText.split('\n').map((l: string) => `- ${l}`));
-        if (diff.newText) lines.push(...diff.newText.split('\n').map((l: string) => `+ ${l}`));
-        parts.push(`<pre><code>${this.escapeHtml(lines.join('\n'))}</code></pre>`);
+        return c.text;
       }
     }
-    return parts.join('\n');
+    
+    return undefined;
   }
 
   private escapeHtml(text: string): string {

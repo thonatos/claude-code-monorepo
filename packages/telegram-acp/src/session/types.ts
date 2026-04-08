@@ -8,6 +8,7 @@ import type * as acp from "@agentclientprotocol/sdk";
 import type { HealthMonitor } from "../health.ts";
 import type { SessionConfig, HistoryConfig } from "../config.ts";
 import type { StoredMessage } from "../storage/types.ts";
+import type { LogLevel } from "../utils/logger.ts";
 
 export interface UserSession {
   userId: string;
@@ -39,4 +40,6 @@ export interface SessionManagerOpts {
   sendTyping: (userId: string) => Promise<void>;
   sendMessage: (userId: string, text: string, parseMode?: 'HTML') => Promise<number>;
   editMessage: (userId: string, msgId: number, text: string, parseMode?: 'HTML') => Promise<number>;
+  logLevel?: LogLevel;
+  onMediaUpload?: (userId: string, filePath: string, type: 'image' | 'audio') => Promise<void>;
 }
