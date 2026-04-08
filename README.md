@@ -7,15 +7,38 @@ A pnpm monorepo containing `telegram-acp` - a bridge that connects Telegram dire
 ```
 claude-code-monorepo/
 ├── packages/
-│   └── telegram-acp/       # Telegram → ACP bridge package
+│   └── telegram-acp/           # Telegram → ACP bridge package
 │       ├── src/
-│       │   ├── bin/        # CLI entry point
-│       │   ├── bridge.ts   # Orchestration layer
-│       │   ├── bot.ts      # grammy Bot setup
-│       │   ├── client.ts   # ACP client
-│       │   ├── session.ts  # Per-user session management
-│       │   └── config.ts   # Config loading & presets
-│       └── dist/           # Compiled output
+│       │   ├── bin/            # CLI entry point
+│       │   ├── bridge.ts       # Orchestration layer
+│       │   ├── telegram-api.ts # Bot API wrapper
+│       │   ├── client.ts       # ACP client
+│       │   ├── config.ts       # Config loading & presets
+│       │   ├── health.ts       # Health monitoring
+│       │   ├── history.ts      # History injection
+│       │   ├── bot/
+│       │   │   ├── index.ts    # grammy Bot setup
+│       │   │   ├── middleware/ # Auth, session middleware
+│       │   │   ├── handlers/   # Command, message handlers
+│       │   │   └── formatters/ # Markdown, escape utilities
+│       │   ├── session/
+│       │   │   ├── index.ts    # SessionManager entry
+│       │   │   ├── lifecycle.ts    # Session CRUD
+│       │   │   ├── spawn.ts    # Agent process spawning
+│       │   │   ├── idle-manager.ts # Timeout management
+│       │   │   └── types.ts    # Type definitions
+│       │   ├── storage/
+│       │   │   ├── index.ts    # Storage exports
+│       │   │   ├── file-storage.ts # File implementation
+│       │   │   └── types.ts    # Storage types
+│       │   └── streaming/
+│       │       ├── index.ts    # Streaming exports
+│       │       ├── state.ts    # Message coordination
+│       │       ├── message-stream.ts
+│       │       ├── rate-limiter.ts
+│       │       ├── formatting.ts
+│       │       └── types.ts
+│       └── dist/               # Compiled output
 ├── biome.json              # Linter/formatter config
 ├── commitlint.config.js    # Commit message validation
 ├── .gitleaks.toml          # Secret detection config
