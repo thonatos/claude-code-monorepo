@@ -58,4 +58,12 @@ describe('MarkdownMediaParser', () => {
     expect(path.isAbsolute(result.media[0].path)).toBe(true);
     expect(result.media[0].path).toContain('test.jpg');
   });
+
+  it('should handle file:// URI format', () => {
+    const result = parser.parse('![img](file:///tmp/test.jpg)');
+
+    expect(result.media).toHaveLength(1);
+    expect(result.media[0].type).toBe('image');
+    expect(result.media[0].path).toBe('/tmp/test.jpg');
+  });
 });
