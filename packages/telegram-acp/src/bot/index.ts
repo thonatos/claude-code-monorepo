@@ -8,13 +8,19 @@ import { SocksProxyAgent } from "socks-proxy-agent";
 import { authMiddleware } from "./middleware/auth.ts";
 import { sessionMiddleware } from "./middleware/session.ts";
 import { createCommandHandlers } from "./handlers/commands.ts";
-import { createMessageHandler } from "./handlers/message.ts";
+import { createMessageHandler, type MessageHandlerModules } from "./handlers/message.ts";
 import type { TelegramAcpConfig } from "../config.ts";
 import type { SessionManager } from "../session/index.ts";
 import { HistoryInjector } from "../history.ts";
+import { MediaDownloader, TempFileManager } from "../media/index.ts";
 
 export type { Bot };
 export type BotApi = Api;
+
+export interface BotModules {
+  downloader?: MediaDownloader;
+  tempManager?: TempFileManager;
+}
 
 /**
  * Create configured bot with auth, session middleware, and handlers.
@@ -22,7 +28,8 @@ export type BotApi = Api;
 export function createBot(
   token: string,
   config: TelegramAcpConfig,
-  sessionManager: SessionManager
+  sessionManager: SessionManager,
+  modules?: BotModules
 ): Bot {
   // Bot options (with proxy if configured)
   const botOptions = {} as {
@@ -63,7 +70,13 @@ export function createBot(
   bot.command("help", commands.help);
 
   // --- Layer 5: Message handler ---
-  const messageHandler = createMessageHandler(historyInjector);
+  const messageHandlerModules: MessageHandlerModules | undefined = modules
+    ? { downloader: modules.downloader!, tempManager: modules.tempManager! }
+    : undefined;
+
+  const messageHandler = createMessageHandler(historyInjector, messageHandlerModules);
+
+  // Handle text and media messages
   bot.on("message", messageHandler);
 
   return bot;
