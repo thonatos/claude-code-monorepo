@@ -22,12 +22,12 @@ Bridge Telegram direct messages to any ACP-compatible AI agent.
 
 ## Quick Start
 
-### 开发模式
+### Development Mode
 
-在项目目录内开发运行：
+Run inside the project directory:
 
 ```bash
-# 创建配置文件
+# Create config file
 mkdir -p ~/.telegram-acp
 cat > ~/.telegram-acp/config.yaml << 'EOF'
 telegram:
@@ -36,21 +36,21 @@ agent:
   preset: claude
 EOF
 
-# 构建 and 运行
+# Build and run
 pnpm run build
 pnpm run start -- --preset claude
 ```
 
-### 安装后使用
+### After Installation
 
-全局安装后可在任意目录运行：
+Run from any directory after global link:
 
 ```bash
-# 构建并链接
+# Build and link
 pnpm run build
 pnpm link --global
 
-# 在任意目录运行
+# Run from anywhere
 pnpx telegram-acp --preset claude
 ```
 
@@ -67,20 +67,20 @@ Current presets:
 
 ## CLI Usage
 
-开发模式：
+**Development mode:**
 
 ```text
-pnpm run start -- --preset <name>    使用预设 (config from ~/.telegram-acp/config.yaml)
-pnpm run start -- --config <file>    使用配置文件
-pnpm run start -- agents             列出可用预设
+pnpm run start -- --preset <name>    Use preset (config from ~/.telegram-acp/config.yaml)
+pnpm run start -- --config <file>    Use config file
+pnpm run start -- agents             List available presets
 ```
 
-安装后：
+**After installation:**
 
 ```text
-pnpx telegram-acp --preset <name>    使用预设 (config from ~/.telegram-acp/config.yaml)
-pnpx telegram-acp --config <file>    使用配置文件
-pnpx telegram-acp agents             列出可用预设
+pnpx telegram-acp --preset <name>    Use preset (config from ~/.telegram-acp/config.yaml)
+pnpx telegram-acp --config <file>    Use config file
+pnpx telegram-acp agents             List available presets
 ```
 
 ## Configuration File
