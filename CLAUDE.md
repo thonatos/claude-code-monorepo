@@ -72,24 +72,51 @@ packages/telegram-acp/
 │   ├── bin/telegram-acp.ts   # CLI entry point, arg parsing
 │   ├── index.ts              # Package exports
 │   ├── bridge.ts             # Orchestration: creates bot + session manager
-│   ├── bot.ts                # grammy Bot setup, middleware, handlers
+│   ├── telegram-api.ts       # Bot API wrapper for dependency injection
 │   ├── client.ts             # ACP Client implementation
-│   ├── session.ts            # Per-user session lifecycle, agent spawning
-│   ├── storage.ts            # Session persistence (file I/O)
-│   └── config.ts             # Config loading, presets, defaults
+│   ├── config.ts             # Config loading, presets, defaults
+│   ├── health.ts             # Health monitoring, process management
+│   ├── history.ts            # History injection, token estimation
+│   ├── bot/
+│   │   ├── index.ts          # grammy Bot setup, exports BotApi type
+│   │   ├── middleware/
+│   │   │   ├── auth.ts       # Whitelist check or open mode
+│   │   │   └── session.ts    # Inject UserSession into context
+│   │   ├── handlers/
+│   │   │   ├── commands.ts   # /start, /help, /status, /restart, /clear
+│   │   │   └── message.ts    # Forward to ACP agent
+│   │   └── formatters/
+│   │       ├── markdown.ts   # Markdown to HTML conversion
+│   │       └── escape.ts     # HTML escape utilities
+│   ├── session/
+│   │   ├── index.ts          # SessionManager orchestrator
+│   │   ├── lifecycle.ts      # Session CRUD, restore, message recording
+│   │   ├── spawn.ts          # Agent process spawn + ACP connection
+│   │   ├── idle-manager.ts   # Idle timeout + session eviction
+│   │   └── types.ts          # UserSession, SessionManagerOpts types
+│   ├── storage/
+│   │   ├── index.ts          # Storage exports
+│   │   ├── file-storage.ts   # File-based storage with batch flush
+│   │   └── types.ts          # StoredSession, StoredMessage types
+│   └── streaming/
+│       ├── index.ts          # Streaming exports
+│       ├── state.ts          # StreamingMessageState coordinator
+│       ├── message-stream.ts # Single message stream state
+│       ├── rate-limiter.ts   # TelegramRateLimiter
+│       ├── formatting.ts     # markdownToHtml, escapeHtml, formatThought
+│       └── types.ts          # StreamingConfig, MessageCallbacks
 ```
 
 **Key flows:**
 
-1. **Startup**: CLI parses args → loadConfig → TelegramAcpBridge.start() → create SessionManager + Bot
+1. **Startup**: CLI parses args → loadConfig → TelegramAcpBridge.start() → create TelegramApiWrapper + SessionManager + Bot
 2. **Message**: grammy middleware chain (auth → session) → messageHandler → ACP prompt → agent subprocess → reply
 3. **Session**: One ACP session per Telegram user, spawned via stdio, auto-cleanup after idle timeout
 
-**Middleware chain (in bot.ts):**
-- Auth: whitelist check or open mode
-- Session: inject UserSession into context
-- Commands: /start, /help, /status, /restart, /clear
-- Messages: forward to ACP agent
+**Dependency injection:**
+- `TelegramApiWrapper` encapsulates Bot API for cleaner dependency injection
+- `SessionManager` uses injected callbacks for Telegram operations
+- Modules are decoupled via clear interfaces (types.ts in each module)
 
 ## Session Persistence
 
