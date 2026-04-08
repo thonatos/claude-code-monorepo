@@ -7,7 +7,6 @@ import os from "node:os";
 import fs from "node:fs";
 import { parse as parseYaml } from "yaml";
 import type { HistoryInjectionConfig } from "./history.ts";
-import type { MetricsConfig } from "./metrics.ts";
 
 export interface AgentPreset {
   label: string;
@@ -36,7 +35,6 @@ export interface ReactionConfig {
 }
 
 export interface ObservabilityConfig {
-  metrics?: MetricsConfig;      // Metrics collection config
   logging?: {
     level: 'debug' | 'info' | 'warn' | 'error';
     format: 'text' | 'json';
@@ -120,11 +118,6 @@ export function defaultConfig(): TelegramAcpConfig {
       },
     },
     observability: {
-      metrics: {
-        enabled: true,
-        port: 9090,
-        prefix: 'telegram_acp',
-      },
       logging: {
         level: 'info',
         format: 'text',
