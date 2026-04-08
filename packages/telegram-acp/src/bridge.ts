@@ -5,7 +5,8 @@
 import path from "node:path";
 import fs from "node:fs";
 import { createBot, startBot, stopBot, type Bot } from "./bot/index.ts";
-import { SessionManager } from "./session.ts";
+import { SessionManager } from "./session/index.ts";
+import { TelegramApiWrapper } from "./telegram-api.ts";
 import type { TelegramAcpConfig } from "./config.ts";
 import { defaultStorageDir } from "./config.ts";
 
@@ -13,6 +14,7 @@ export class TelegramAcpBridge {
   private config: TelegramAcpConfig;
   private bot: Bot | null = null;
   private sessionManager: SessionManager | null = null;
+  private telegramApi: TelegramApiWrapper | null = null;
   private log: (msg: string) => void;
   private stopping = false;
 
@@ -25,7 +27,7 @@ export class TelegramAcpBridge {
   async start(): Promise<void> {
     this.log("[telegram-acp] Starting...");
 
-    // Create session manager
+    // Create session manager with callbacks that will use telegramApi (set after bot creation)
     this.sessionManager = new SessionManager({
       agentCommand: this.config.agent.command,
       agentArgs: this.config.agent.args,
@@ -37,39 +39,22 @@ export class TelegramAcpBridge {
       showThoughts: this.config.agent.showThoughts,
       log: this.log,
       onReply: async (userId: string, text: string) => {
-        if (this.bot) {
-          await this.bot.api.sendMessage(userId, text);
+        if (this.telegramApi) {
+          await this.telegramApi.sendMessage(userId, text);
         }
       },
       sendTyping: async (userId: string) => {
-        if (this.bot) {
-          await this.bot.api.sendChatAction(userId, "typing");
+        if (this.telegramApi) {
+          await this.telegramApi.sendTyping(userId);
         }
       },
       sendMessage: async (userId: string, text: string, parseMode?: 'HTML') => {
-        if (!this.bot) return 0;
-        try {
-          const msg = await this.bot.api.sendMessage(userId, text, {
-            parse_mode: parseMode
-          });
-          return msg.message_id;
-        } catch (err) {
-          this.log(`[bridge] Error sending message: ${String(err)}`);
-          return 0;
-        }
+        if (!this.telegramApi) return 0;
+        return this.telegramApi.sendMessage(userId, text, parseMode);
       },
       editMessage: async (userId: string, msgId: number, text: string, parseMode?: 'HTML') => {
-        if (!this.bot || !msgId || msgId <= 0) return 0;
-        try {
-          const result = await this.bot.api.editMessageText(userId, msgId, text, {
-            parse_mode: parseMode
-          });
-          if (result === true) return msgId;
-          return result.message_id;
-        } catch (err) {
-          this.log(`[bridge] Error editing message: ${String(err)}`);
-          return 0;
-        }
+        if (!this.telegramApi) return 0;
+        return this.telegramApi.editMessage(userId, msgId, text, parseMode);
       },
     });
 
@@ -78,6 +63,9 @@ export class TelegramAcpBridge {
 
     // Create and start bot
     this.bot = createBot(this.config.telegram.botToken, this.config, this.sessionManager);
+
+    // Create Telegram API wrapper with bot's API
+    this.telegramApi = new TelegramApiWrapper(this.bot.api);
 
     await startBot(this.bot);
 

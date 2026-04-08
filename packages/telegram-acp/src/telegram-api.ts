@@ -38,6 +38,6 @@ export class TelegramApiWrapper {
   }
 
   async sendReaction(userId: string, messageId: number, emoji: string): Promise<void> {
-    await this.api.setMessageReaction(userId, messageId, { reaction: [{ type: 'emoji', emoji }] });
+    await this.api.setMessageReaction(userId, messageId, [{ type: 'emoji', emoji: emoji as any }]);
   }
 }

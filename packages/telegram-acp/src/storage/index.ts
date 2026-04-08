@@ -3,4 +3,4 @@
  */
 
 export { FileStorage } from './file-storage.ts';
-export type { StorageBackend, StoredSession, StoredMessage, SessionStatus, FileStorageConfig } from './types.ts';
+export type { StorageBackend, StoredSession, StoredMessage, SessionStatus } from './types.ts';

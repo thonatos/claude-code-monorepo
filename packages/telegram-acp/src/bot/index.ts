@@ -3,17 +3,18 @@
  * Refactored with modular structure for better maintainability.
  */
 
-import { Bot, GrammyError } from "grammy";
+import { Bot, GrammyError, Api } from "grammy";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { authMiddleware } from "./middleware/auth.ts";
 import { sessionMiddleware } from "./middleware/session.ts";
 import { createCommandHandlers } from "./handlers/commands.ts";
 import { createMessageHandler } from "./handlers/message.ts";
 import type { TelegramAcpConfig } from "../config.ts";
-import type { SessionManager } from "../session.ts";
+import type { SessionManager } from "../session/index.ts";
 import { HistoryInjector } from "../history.ts";
 
 export type { Bot };
+export type BotApi = Api;
 
 /**
  * Create configured bot with auth, session middleware, and handlers.
