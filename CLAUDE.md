@@ -21,12 +21,16 @@ Before ANY implementation, you MUST:
 
 ## Documentation Requirements
 
-**代码变更后必须同步更新文档：**
+**Documentation must be updated synchronously after code changes:**
 
-1. **子包 README.md** - `packages/<package>/README.md`
-2. **项目根目录 README.md** - `<root>/README.md`
+1. **Package README.md** - `packages/<package>/README.md`
+2. **Root README.md** - `<root>/README.md`
 
-触发条件：架构变更、新增功能/API、配置格式变更、CLI 命令变更
+**Trigger conditions**: Architecture changes, new features/APIs, config format changes, CLI command changes
+
+## Language Policy
+
+**All documentation and code comments must be in English.**
 
 ## Package Management
 
@@ -53,7 +57,7 @@ pnpm run start     # Run compiled CLI
 
 ### CLI Commands
 
-开发模式：
+**Development mode:**
 
 ```bash
 pnpm --filter telegram-acp run start -- --preset <name>
@@ -61,7 +65,7 @@ pnpm --filter telegram-acp run start -- --config <file>
 pnpm --filter telegram-acp run start -- agents
 ```
 
-安装后：
+**After installation:**
 
 ```bash
 pnpx telegram-acp --preset <name>
