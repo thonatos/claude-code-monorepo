@@ -2,6 +2,7 @@
  * Telegram Bot API wrapper for dependency injection.
  */
 
+import { InputFile } from "grammy";
 import type { BotApi } from "./bot/index.ts";
 
 export class TelegramApiWrapper {
@@ -44,5 +45,15 @@ export class TelegramApiWrapper {
 
   async sendReaction(userId: string, messageId: number, emoji: string): Promise<void> {
     await this.api.setMessageReaction(userId, messageId, [{ type: 'emoji', emoji: emoji as any }]);
+  }
+
+  async sendPhoto(userId: string, filePath: string): Promise<{ message_id: number }> {
+    const msg = await this.api.sendPhoto(userId, new InputFile(filePath));
+    return { message_id: msg.message_id };
+  }
+
+  async sendAudio(userId: string, filePath: string): Promise<{ message_id: number }> {
+    const msg = await this.api.sendAudio(userId, new InputFile(filePath));
+    return { message_id: msg.message_id };
   }
 }
