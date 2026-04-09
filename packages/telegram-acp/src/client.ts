@@ -207,7 +207,7 @@ export class TelegramAcpClient implements acp.Client {
 
       // Always log thoughts to CLI (default info level)
       if (shouldLog('info', this.logLevel)) {
-        this.opts.log(`[thought] ${truncate(thought, 100)}...`);
+        this.opts.log(`[thought] ${truncate(thought, 100)}`);
       }
 
       // Trigger reaction

@@ -14,11 +14,11 @@ export class MarkdownMediaParser {
     const media: MediaExtractResult['media'] = [];
     const seen = new Set<string>();
 
-    // Match all ![alt](path) patterns
-    const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    // 1. Match all ![alt](path) patterns (Markdown format)
+    const markdownRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = markdownRegex.exec(text)) !== null) {
       const rawPath = match[2];
 
       // Skip empty paths
@@ -38,6 +38,32 @@ export class MarkdownMediaParser {
           path: this.resolvePath(rawPath),
           syntax: match[0], // Full match: ![alt](path)
         });
+      }
+    }
+
+    // 2. Match standalone absolute file paths (plain text format)
+    // Strategy: Match paths on separate lines or paths that look like file paths
+    // Pattern 1: Line starting with / or ~ (entire line is a path)
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      // Check if line starts with / or ~ and ends with media extension
+      if (/^[\/~].+\.(?:jpg|jpeg|png|gif|webp|mp3|ogg|m4a|wav)$/i.test(trimmedLine)) {
+        const rawPath = trimmedLine;
+
+        // Skip if already seen
+        if (seen.has(rawPath)) continue;
+        seen.add(rawPath);
+
+        const type = this.detectMediaType(rawPath);
+        if (type) {
+          media.push({
+            type,
+            path: this.resolvePath(rawPath),
+            syntax: rawPath, // For plain text, syntax is just the path
+          });
+        }
       }
     }
 

@@ -66,4 +66,35 @@ describe('MarkdownMediaParser', () => {
     expect(result.media[0].type).toBe('image');
     expect(result.media[0].path).toBe('/tmp/test.jpg');
   });
+
+  // Plain text path detection tests
+  it('should extract plain text image paths', () => {
+    const result = parser.parse('Screenshot saved to:\n/Users/test/screenshot.png');
+
+    expect(result.media).toHaveLength(1);
+    expect(result.media[0].type).toBe('image');
+    expect(result.media[0].path).toBe('/Users/test/screenshot.png');
+  });
+
+  it('should extract plain text audio paths', () => {
+    const result = parser.parse('Audio file:\n/tmp/recording.mp3');
+
+    expect(result.media).toHaveLength(1);
+    expect(result.media[0].type).toBe('audio');
+    expect(result.media[0].path).toBe('/tmp/recording.mp3');
+  });
+
+  it('should deduplicate paths in both markdown and plain text', () => {
+    const result = parser.parse('![img](/tmp/test.jpg)\n/tmp/test.jpg');
+
+    expect(result.media).toHaveLength(1);
+    expect(result.media[0].path).toBe('/tmp/test.jpg');
+  });
+
+  it('should handle paths with spaces in directory names', () => {
+    const result = parser.parse('/Users/test/path with spaces/image.jpg');
+
+    expect(result.media).toHaveLength(1);
+    expect(result.media[0].path).toBe('/Users/test/path with spaces/image.jpg');
+  });
 });
