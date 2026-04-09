@@ -160,6 +160,23 @@ TELEGRAM_ACP_LOG_LEVEL=debug npm start
 - Bot shows 📥 reaction during upload
 - Files appear in chat as native Telegram media
 
+**Agent Output Formats:**
+
+Agents can indicate media files using two formats:
+
+1. **Markdown format** (recommended):
+   ```
+   ![screenshot](/tmp/output.png)
+   ```
+
+2. **Plain text path** (on separate line):
+   ```
+   Screenshot saved to:
+   /tmp/output.png
+   ```
+
+Both formats will trigger automatic media upload. The markdown syntax will be converted to inline code format in the text message.
+
 ### Technical Details
 
 **Temporary Files:**
