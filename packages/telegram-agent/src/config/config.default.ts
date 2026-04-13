@@ -1,79 +1,26 @@
-import path from 'path';
-import os from 'os';
 import fs from 'fs';
+import path from 'path';
 import { parse as parseYaml } from 'yaml';
-import type { ArtusXConfig } from '@artusx/core';
-
-export interface TelegramAgentConfig {
-  telegram: {
-    botToken: string;
-  };
-  agent: {
-    preset?: string;
-    command: string;
-    args: string[];
-    cwd: string;
-    env?: Record<string, string>;
-    showThoughts: boolean;
-  };
-  session: {
-    idleTimeoutMs: number;
-    maxConcurrentUsers: number;
-    autoRecover: boolean;
-  };
-  webhook?: {
-    token: string;
-    enableAuth: boolean;
-  };
-  allowedUsers?: string[];
-}
-
-const PRESETS: Record<string, { command: string; args: string[] }> = {
-  claude: {
-    command: 'pnpx',
-    args: ['@agentclientprotocol/claude-agent-acp'],
-  },
-};
-
-function defaultStorageDir(): string {
-  return path.join(os.homedir(), '.telegram-acp');
-}
-
-function defaultConfig(): TelegramAgentConfig {
-  return {
-    telegram: {
-      botToken: process.env.TELEGRAM_BOT_TOKEN || '',
-    },
-    agent: {
-      preset: 'claude',
-      command: 'pnpx',
-      args: ['@agentclientprotocol/claude-agent-acp'],
-      cwd: process.cwd(),
-      showThoughts: false,
-    },
-    session: {
-      idleTimeoutMs: 24 * 60 * 60 * 1000, // 24 hours
-      maxConcurrentUsers: 10,
-      autoRecover: true,
-    },
-    webhook: {
-      token: process.env.TELEGRAM_WEBHOOK_TOKEN || 'default-webhook-token',
-      enableAuth: true,
-    },
-  };
-}
+import {
+  defaultStorageDir,
+  defaultMediaDir,
+  DEFAULT_SESSION_CONFIG,
+  DEFAULT_WEBHOOK_CONFIG,
+  DEFAULT_AGENT_CONFIG,
+  resolvePreset,
+} from '../constants';
+import type { TelegramAgentConfig } from '../types';
 
 function loadConfigFromFile(): Partial<TelegramAgentConfig> {
   const configPath = path.join(defaultStorageDir(), 'config.yaml');
-  
+
   if (!fs.existsSync(configPath)) {
     return {};
   }
 
   try {
     const content = fs.readFileSync(configPath, 'utf-8');
-    const fileConfig = parseYaml(content) as Partial<TelegramAgentConfig>;
-    return fileConfig;
+    return parseYaml(content) as Partial<TelegramAgentConfig>;
   } catch (err) {
     console.error(`Failed to parse config file ${configPath}: ${String(err)}`);
     return {};
@@ -81,48 +28,65 @@ function loadConfigFromFile(): Partial<TelegramAgentConfig> {
 }
 
 export default () => {
-  const defaultCfg = defaultConfig();
   const fileConfig = loadConfigFromFile();
 
-  // Merge configurations
   const config: TelegramAgentConfig = {
     telegram: {
-      botToken: fileConfig.telegram?.botToken || defaultCfg.telegram.botToken,
+      botToken: process.env.TELEGRAM_BOT_TOKEN || fileConfig.telegram?.botToken || '',
     },
     agent: {
-      preset: fileConfig.agent?.preset || defaultCfg.agent.preset,
-      command: fileConfig.agent?.command || defaultCfg.agent.command,
-      args: fileConfig.agent?.args || defaultCfg.agent.args,
-      cwd: fileConfig.agent?.cwd || defaultCfg.agent.cwd,
-      env: fileConfig.agent?.env || defaultCfg.agent.env,
-      showThoughts: fileConfig.agent?.showThoughts ?? defaultCfg.agent.showThoughts,
+      preset: fileConfig.agent?.preset ?? DEFAULT_AGENT_CONFIG.preset,
+      command: fileConfig.agent?.command ?? DEFAULT_AGENT_CONFIG.command,
+      args: fileConfig.agent?.args ?? DEFAULT_AGENT_CONFIG.args,
+      cwd: fileConfig.agent?.cwd ?? DEFAULT_AGENT_CONFIG.cwd,
+      env: fileConfig.agent?.env ?? DEFAULT_AGENT_CONFIG.env,
+      showThoughts: fileConfig.agent?.showThoughts ?? DEFAULT_AGENT_CONFIG.showThoughts,
     },
     session: {
-      idleTimeoutMs: fileConfig.session?.idleTimeoutMs || defaultCfg.session.idleTimeoutMs,
-      maxConcurrentUsers: fileConfig.session?.maxConcurrentUsers || defaultCfg.session.maxConcurrentUsers,
-      autoRecover: fileConfig.session?.autoRecover ?? defaultCfg.session.autoRecover,
+      idleTimeoutMs: fileConfig.session?.idleTimeoutMs ?? DEFAULT_SESSION_CONFIG.idleTimeoutMs,
+      maxConcurrentUsers: fileConfig.session?.maxConcurrentUsers ?? DEFAULT_SESSION_CONFIG.maxConcurrentUsers,
+      autoRecover: fileConfig.session?.autoRecover ?? DEFAULT_SESSION_CONFIG.autoRecover,
     },
     webhook: {
-      token: fileConfig.webhook?.token || defaultCfg.webhook!.token,
-      enableAuth: fileConfig.webhook?.enableAuth ?? defaultCfg.webhook!.enableAuth,
+      token: process.env.TELEGRAM_WEBHOOK_TOKEN ?? fileConfig.webhook?.token ?? DEFAULT_WEBHOOK_CONFIG.token,
+      enableAuth: fileConfig.webhook?.enableAuth ?? DEFAULT_WEBHOOK_CONFIG.enableAuth,
     },
-    allowedUsers: fileConfig.allowedUsers || defaultCfg.allowedUsers,
+    media: {
+      tempDir: fileConfig.media?.tempDir ?? defaultMediaDir(),
+    },
+    allowedUsers: fileConfig.allowedUsers ?? [],
+    proxy: fileConfig.proxy ?? '',
   };
 
   // Resolve preset if specified
-  if (config.agent.preset && PRESETS[config.agent.preset]) {
-    const preset = PRESETS[config.agent.preset];
-    config.agent.command = preset.command;
-    config.agent.args = preset.args;
+  if (config.agent.preset) {
+    const resolved = resolvePreset(config.agent.preset);
+    if (resolved) {
+      config.agent.command = resolved.preset.command;
+      config.agent.args = resolved.preset.args;
+      if (resolved.preset.env) {
+        config.agent.env = { ...config.agent.env, ...resolved.preset.env };
+      }
+    }
   }
-
-  const artusx: ArtusXConfig = {
-    keys: 'artusx-koa',
-    port: 7001,
-  };
 
   return {
     ...config,
-    artusx,
+    artusx: {
+      keys: 'artusx-koa',
+      port: 7001,
+      static: {
+        dirs: [
+          {
+            prefix: '/public/',
+            dir: path.resolve(__dirname, '../public'),
+          },
+        ],
+        dynamic: true,
+        preload: false,
+        buffer: false,
+        maxFiles: 1000,
+      },
+    },
   };
 };

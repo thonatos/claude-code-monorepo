@@ -1,33 +1,27 @@
-import { Injectable, Inject } from '@artusx/core';
+import { Injectable, Inject, ArtusInjectEnum } from '@artusx/core';
 import path from 'path';
 import fs from 'fs';
 import { BotService } from './bot.service';
+import { defaultMediaDir } from '../constants';
 
 @Injectable()
 export class MediaHandler {
+  @Inject(ArtusInjectEnum.Application)
+  app!: any;
+
   @Inject(BotService)
   botService!: BotService;
 
-  private tempDir: string;
-
-  constructor() {
-    this.tempDir = path.join(process.env.HOME || '/tmp', '.telegram-agent', 'media');
-    if (!fs.existsSync(this.tempDir)) {
-      fs.mkdirSync(this.tempDir, { recursive: true });
-    }
+  private get tempDir(): string {
+    return this.app?.config?.media?.tempDir || defaultMediaDir();
   }
 
   async downloadPhoto(userId: string, photo: any): Promise<string> {
     const fileId = photo[photo.length - 1].file_id;
     // Download file path from Telegram server (placeholder implementation)
     await this.botService.downloadFile(fileId);
-    
-    const localPath = path.join(this.tempDir, userId, `${fileId}.jpg`);
-    const userDir = path.dirname(localPath);
-    if (!fs.existsSync(userDir)) {
-      fs.mkdirSync(userDir, { recursive: true });
-    }
 
+    const localPath = path.join(this.tempDir, userId, `${fileId}.jpg`);
     return localPath;
   }
 

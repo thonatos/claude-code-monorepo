@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@artusx/core';
 import { InputFile } from 'grammy';
-import type { SendMessageOptions } from './types';
+import type { SendMessageOptions } from '../types';
 import type { Context } from 'grammy';
-import type { TelegramClient } from '../plugins/telegram/src/client';
-import { InjectEnum as TelegramInjectEnum } from '../plugins/telegram/src/constants';
+import type TelegramClient from '../plugins/telegram/client';
+import { InjectEnum as TelegramInjectEnum } from '../plugins/telegram/constants';
 
 @Injectable()
 export class BotService {

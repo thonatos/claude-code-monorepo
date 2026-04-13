@@ -1,3 +1,5 @@
+import path from "path";
+
 export default {
   artusx: {
     enable: true,
@@ -5,10 +7,10 @@ export default {
   },
   telegram: {
     enable: true,
-    path: './plugins/telegram',
+    path: path.resolve(__dirname, '../plugins/telegram'),
   },
   acp: {
     enable: true,
-    path: './plugins/acp',
+    path: path.resolve(__dirname, '../plugins/acp'),
   },
 };

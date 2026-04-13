@@ -1,16 +1,16 @@
 import { Injectable, Inject, ArtusInjectEnum } from '@artusx/core';
+import { spawn, type ChildProcess } from 'child_process';
+import { Writable, Readable } from 'stream';
+import * as acp from '@agentclientprotocol/sdk';
 import { BotService } from '../module-bot/bot.service';
 import { MediaHandler } from '../module-bot/media.handler';
-import type { SessionManager } from '../plugins/acp/src/session';
-import type { HistoryManager } from '../plugins/acp/src/history';
-import { InjectEnum as ACPInjectEnum } from '../plugins/acp/src/constants';
-import type { WebhookRequest } from './types';
+import { ACPClient, InjectEnum as ACPInjectEnum } from '../plugins/acp';
+import type { WebhookRequest } from '../types';
 
 @Injectable()
 export class BridgeService {
-
   @Inject(ArtusInjectEnum.Application)
-  app: any;
+  app!: any;
 
   @Inject(BotService)
   botService!: BotService;
@@ -18,40 +18,117 @@ export class BridgeService {
   @Inject(MediaHandler)
   mediaHandler!: MediaHandler;
 
-  @Inject(ACPInjectEnum.SessionManager)
-  sessionManager!: SessionManager;
+  @Inject(ACPInjectEnum.ACPClient)
+  acpClient!: ACPClient;
 
-  @Inject(ACPInjectEnum.HistoryManager)
-  historyManager!: HistoryManager;
+  private agentProcess: ChildProcess | null = null;
+  private connection: acp.ClientSideConnection | null = null;
+  private currentSessionId: string | null = null;
+  private isInitialized = false;
+
+  async ensureConnection(userId: string): Promise<void> {
+    if (this.isInitialized) return;
+
+    const config = this.app?.config?.artusx?.acp;
+    if (!config?.agent) {
+      throw new Error('ACP agent config not found');
+    }
+
+    // Initialize client callbacks
+    this.acpClient.init({
+      sendMessage: async (text: string) => {
+        return await this.botService.sendMessage(userId, text);
+      },
+      editMessage: async (msgId: number, text: string) => {
+        await this.botService.editMessage(userId, msgId, text);
+        return msgId;
+      },
+      sendTyping: async () => {
+        // Could send typing indicator via botService
+      },
+      onMediaUpload: async (path: string, type: 'image' | 'audio') => {
+        if (type === 'image') {
+          await this.mediaHandler.uploadPhoto(userId, path);
+        } else {
+          await this.mediaHandler.uploadAudio(userId, path);
+        }
+      },
+      showThoughts: config.agent.showThoughts,
+    });
+
+    // Spawn agent process
+    this.agentProcess = spawn(config.agent.command, config.agent.args, {
+      cwd: config.agent.cwd || process.cwd(),
+      env: {
+        ...process.env,
+        ...config.agent.env,
+      },
+      stdio: ['pipe', 'pipe', 'inherit'],
+    });
+
+    this.agentProcess.on('error', (err: Error) => {
+      console.error('[bridge] Process error:', err);
+    });
+
+    // Create streams to communicate with the agent
+    const input = Writable.toWeb(this.agentProcess.stdin!);
+    const output = Readable.toWeb(this.agentProcess.stdout!);
+
+    // Create the connection
+    const stream = acp.ndJsonStream(input, output);
+    this.connection = new acp.ClientSideConnection((_agent) => this.acpClient, stream);
+
+    // Initialize the connection
+    const initResult = await this.connection.initialize({
+      protocolVersion: acp.PROTOCOL_VERSION,
+      clientCapabilities: {
+        fs: {
+          readTextFile: true,
+          writeTextFile: true,
+        },
+      },
+    });
+
+    console.log(`[bridge] Connected to agent (protocol v${initResult.protocolVersion})`);
+
+    // Create session
+    const sessionResult = await this.connection.newSession({
+      cwd: config.agent.cwd || process.cwd(),
+      mcpServers: [],
+    });
+
+    this.currentSessionId = sessionResult.sessionId;
+    this.isInitialized = true;
+  }
 
   async handleUserMessage(userId: string, message: any): Promise<void> {
-    let session = this.sessionManager.get(userId);
-    if (!session) {
-      const agentConfig = this.app?.config?.artusx?.agent;
-      session = await this.sessionManager.create(userId, agentConfig);
+    await this.ensureConnection(userId);
+
+    if (!this.connection || !this.currentSessionId) {
+      throw new Error('Connection not initialized');
     }
 
     if (message.photo) {
       const filePath = await this.mediaHandler.downloadPhoto(userId, message.photo);
-      const prompt = `User sent image: ${filePath}`;
-      await this.sendPromptToAgent(session, prompt);
-
-      await this.historyManager.addEntry(userId, {
-        role: 'user',
-        content: `[Image: ${filePath}]`,
-        timestamp: new Date(),
-      });
+      await this.sendPrompt(`User sent image: ${filePath}`);
     } else if (message.text) {
-      await this.sendPromptToAgent(session, message.text);
-
-      await this.historyManager.addEntry(userId, {
-        role: 'user',
-        content: message.text,
-        timestamp: new Date(),
-      });
+      await this.botService.sendReaction(userId, message.message_id);
+      await this.sendPrompt(message.text);
     }
+  }
 
-    await this.botService.sendReaction(userId, message.message_id);
+  private async sendPrompt(prompt: string): Promise<void> {
+    if (!this.connection || !this.currentSessionId) return;
+
+    await this.connection.prompt({
+      sessionId: this.currentSessionId,
+      prompt: [
+        {
+          type: 'text',
+          text: prompt,
+        },
+      ],
+    });
   }
 
   async handleWebhookRequest(request: WebhookRequest): Promise<any> {
@@ -75,10 +152,14 @@ export class BridgeService {
     }
   }
 
-  private async sendPromptToAgent(session: any, prompt: string): Promise<void> {
-    if (!session.agentProcess) return;
-
-    session.agentProcess.stdin.write(JSON.stringify({ prompt }) + '\n');
-    session.lastActivityAt = new Date();
+  async close(): Promise<void> {
+    if (this.agentProcess) {
+      this.agentProcess.kill();
+      this.agentProcess = null;
+    }
+    this.connection = null;
+    this.currentSessionId = null;
+    this.isInitialized = false;
+    this.acpClient.reset();
   }
 }

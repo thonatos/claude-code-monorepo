@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@artusx/core';
 import { BridgeService } from '../module-bridge/bridge.service';
-import type { SendMessageRequest, SendMediaRequest, EditMessageRequest, SendReactionRequest } from './types';
+import type { SendMessageRequest, SendMediaRequest, EditMessageRequest, SendReactionRequest } from '../types';
 
 @Injectable()
 export class WebhookService {
