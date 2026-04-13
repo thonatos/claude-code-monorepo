@@ -1,0 +1,8 @@
+{
+  "name": "acp-plugin",
+  "version": "0.1.0",  
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^0.16.1"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "telegram-plugin",
+  "version": "0.1.0",  
+  "main": "./src/index.ts",
+  "dependencies": {
+    "grammy": "^1.41.1"
+  }
+}
