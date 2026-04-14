@@ -79,3 +79,8 @@ export interface WebhookResponse {
   data?: any;
   error?: string;
 }
+
+export interface UserSession {
+  sessionId: string;
+  lastActivity: Date;
+}
