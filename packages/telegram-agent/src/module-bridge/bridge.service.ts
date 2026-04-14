@@ -2,7 +2,6 @@ import { Readable, Writable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import type { ArtusApplication } from "@artusx/core";
 import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
-import { AuthService } from "../module-bot/auth.service";
 import { BotService } from "../module-bot/bot.service";
 import { MediaHandler } from "../module-bot/media.handler";
 import { ReactionService } from "../module-bot/reaction.service";
@@ -30,26 +29,16 @@ export class BridgeService {
   @Inject(ACPInjectEnum.ACPClient)
   acpClient!: ACPClient;
 
-  @Inject(AuthService)
-  authService!: AuthService;
-
   @Inject(AgentProcessService)
   processManager!: AgentProcessService;
 
-  // Session management (will be used in subsequent tasks)
+  // Session management
   private sessions: Map<string, UserSession> = new Map();
   private connections: Map<string, acp.ClientSideConnection> = new Map();
   private readonly MAX_CONCURRENT_USERS: number;
 
   constructor() {
     this.MAX_CONCURRENT_USERS = 10;
-    // Silence TypeScript unused variable warnings - these will be used in subsequent tasks
-    void this.sessions;
-    void this.connections;
-    void this.MAX_CONCURRENT_USERS;
-    void this.logger;
-    void this.processManager;
-    void this.ensureUserSession;
   }
 
   private get logger() {
