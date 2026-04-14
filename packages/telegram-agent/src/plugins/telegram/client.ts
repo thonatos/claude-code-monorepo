@@ -27,10 +27,6 @@ export default class TelegramClient {
     this.bot.catch((err) => {
       console.log?.(`[grammy] Error: ${err.message}`);
     });
-
-    // this.bot.on('message', (ctx) => {
-    //   console.log('Received message:', ctx.message);
-    // });
   }
 
   async start() {

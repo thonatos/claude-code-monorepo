@@ -5,6 +5,8 @@ import type { ArtusApplication } from '@artusx/core';
 import { defaultMediaDir } from './constants';
 import type TelegramClient from './plugins/telegram/client';
 import { InjectEnum as TelegramInjectEnum } from './plugins/telegram/constants';
+import { BotService } from './module-bot/bot.service';
+import { MessageHandler } from './module-bot/message.handler';
 
 @LifecycleHookUnit()
 export default class TelegramAgentLifecycle {
@@ -13,6 +15,10 @@ export default class TelegramAgentLifecycle {
 
   @Inject(TelegramInjectEnum.Client)
   private telegramClient!: TelegramClient;
+  @Inject(BotService)
+  private botService!: BotService;
+  @Inject(MessageHandler)
+  private messageHandler!: MessageHandler;
 
   get logger() {
     return this.app.logger;
@@ -41,9 +47,9 @@ export default class TelegramAgentLifecycle {
   @LifecycleHook()
   didReady() {
     this.logger.info('[telegram-agent] Application fully ready');
-    this.telegram.on('message', (ctx) => {
-      this.logger.info(`[telegram-agent] Received message from ${ctx.from?.username || ctx.from?.id}: ${ctx.message.text}`);
-    });
+    // Register message handler to connect Telegram -> ACP Agent
+    this.botService.setupMessageHandler((ctx) => this.messageHandler.handle(ctx));
+    this.logger.info('[telegram-agent] Message handler registered');
   }
 
   @LifecycleHook()

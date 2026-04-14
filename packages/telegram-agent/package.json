@@ -22,9 +22,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@agentclientprotocol/sdk": "^0.16.1",
+    "@agentclientprotocol/sdk": "latest",
     "@artusx/core": "latest",
     "@artusx/utils": "latest",
+    "@grammyjs/stream": "^1.0.1",
     "grammy": "^1.41.1",
     "reflect-metadata": "^0.1.13",
     "socks-proxy-agent": "^8.0.5",

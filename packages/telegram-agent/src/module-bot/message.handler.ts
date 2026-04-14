@@ -1,9 +1,11 @@
-import { Injectable, Inject } from '@artusx/core';
+import { Injectable, Inject, ScopeEnum } from '@artusx/core';
 import type { Context } from 'grammy';
 import { BotService } from './bot.service';
 import { BridgeService } from '../module-bridge/bridge.service';
 
-@Injectable()
+@Injectable({
+  scope: ScopeEnum.TRANSIENT,
+})
 export class MessageHandler {
   @Inject(BotService)
   botService!: BotService;

@@ -26,60 +26,63 @@ export class BridgeService {
   private currentSessionId: string | null = null;
   private isInitialized = false;
 
-  async ensureConnection(userId: string): Promise<void> {
-    if (this.isInitialized) return;
+async ensureConnection(userId: string): Promise<void> {
+  if (this.isInitialized) return;
 
-    const config = this.app?.config?.artusx?.acp;
-    if (!config?.agent) {
-      throw new Error('ACP agent config not found');
-    }
+  const config = this.app?.config?.agent;
+  console.log('[bridge] Initializing connection with config:', config);
+   if (!config) {
+    throw new Error('ACP agent config not found');
+  }
 
-    // Initialize client callbacks
-    this.acpClient.init({
-      sendMessage: async (text: string) => {
-        return await this.botService.sendMessage(userId, text);
-      },
-      editMessage: async (msgId: number, text: string) => {
-        await this.botService.editMessage(userId, msgId, text);
-        return msgId;
-      },
-      sendTyping: async () => {
-        // Could send typing indicator via botService
-      },
-      onMediaUpload: async (path: string, type: 'image' | 'audio') => {
-        if (type === 'image') {
-          await this.mediaHandler.uploadPhoto(userId, path);
-        } else {
-          await this.mediaHandler.uploadAudio(userId, path);
-        }
-      },
-      showThoughts: config.agent.showThoughts,
-    });
+  // Initialize client callbacks
+  this.acpClient.init({
+    sendMessage: async (text: string) => {
+      return await this.botService.sendMessage(userId, text);
+    },
+    editMessage: async (msgId: number, text: string) => {
+      await this.botService.editMessage(userId, msgId, text);
+    },
+    removeReaction: async (msgId: number) => {
+      await this.botService.removeReaction(userId, msgId);
+    },
+    sendTyping: async () => {
+      await this.botService.sendTyping(userId);
+    },
+    onMediaUpload: async (path: string, type: 'image' | 'audio') => {
+      if (type === 'image') {
+        await this.mediaHandler.uploadPhoto(userId, path);
+      } else {
+        await this.mediaHandler.uploadAudio(userId, path);
+      }
+    },
+    showThoughts: config.showThoughts,
+   });
 
-    // Spawn agent process
-    this.agentProcess = spawn(config.agent.command, config.agent.args, {
-      cwd: config.agent.cwd || process.cwd(),
-      env: {
-        ...process.env,
-        ...config.agent.env,
-      },
-      stdio: ['pipe', 'pipe', 'inherit'],
-    });
+   // Spawn agent process
+    this.agentProcess = spawn(config.command, config.args, {
+      cwd: config.cwd || process.cwd(),
+     env: {
+       ...process.env,
+        ...config.env,
+     },
+     stdio: ['pipe', 'pipe', 'inherit'],
+   });
 
-    this.agentProcess.on('error', (err: Error) => {
-      console.error('[bridge] Process error:', err);
-    });
+   this.agentProcess.on('error', (err: Error) => {
+     console.error('[bridge] Process error:', err);
+   });
 
-    // Create streams to communicate with the agent
-    const input = Writable.toWeb(this.agentProcess.stdin!);
-    const output = Readable.toWeb(this.agentProcess.stdout!);
+   // Create streams
+   const input = Writable.toWeb(this.agentProcess.stdin!);
+   const output = Readable.toWeb(this.agentProcess.stdout!);
 
-    // Create the connection
-    const stream = acp.ndJsonStream(input, output);
-    this.connection = new acp.ClientSideConnection((_agent) => this.acpClient, stream);
+   // Create the connection
+   const stream = acp.ndJsonStream(input, output);
+   this.connection = new acp.ClientSideConnection((_agent) => this.acpClient, stream);
 
-    // Initialize the connection
-    const initResult = await this.connection.initialize({
+   // Initialize
+   const initResult = await this.connection.initialize({
       protocolVersion: acp.PROTOCOL_VERSION,
       clientCapabilities: {
         fs: {
@@ -93,7 +96,7 @@ export class BridgeService {
 
     // Create session
     const sessionResult = await this.connection.newSession({
-      cwd: config.agent.cwd || process.cwd(),
+      cwd: config.cwd || process.cwd(),
       mcpServers: [],
     });
 
@@ -107,6 +110,14 @@ export class BridgeService {
     if (!this.connection || !this.currentSessionId) {
       throw new Error('Connection not initialized');
     }
+
+    // Set user message ID for reaction tracking
+    if (message.message_id) {
+      this.acpClient.setUserMessageId(message.message_id);
+    }
+
+    // Reset message state
+    this.acpClient.reset();
 
     if (message.photo) {
       const filePath = await this.mediaHandler.downloadPhoto(userId, message.photo);

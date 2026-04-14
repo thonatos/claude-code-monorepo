@@ -1,11 +1,13 @@
-import { Injectable, Inject } from '@artusx/core';
+import { Injectable, Inject, ScopeEnum } from '@artusx/core';
 import { InputFile } from 'grammy';
 import type { SendMessageOptions } from '../types';
 import type { Context } from 'grammy';
 import type TelegramClient from '../plugins/telegram/client';
 import { InjectEnum as TelegramInjectEnum } from '../plugins/telegram/constants';
 
-@Injectable()
+@Injectable({  
+  scope: ScopeEnum.TRANSIENT,
+})
 export class BotService {
   @Inject(TelegramInjectEnum.Client)
   private telegramClient!: TelegramClient;
@@ -30,20 +32,21 @@ export class BotService {
     return result.message_id;
   }
 
-  async editMessage(userId: string, messageId: number, text: string, options?: SendMessageOptions): Promise<number> {
+  async editMessage(userId: string, messageId: number, text: string, options?: SendMessageOptions): Promise<void> {
     const bot = this.telegramClient.getBot();
-    const result = await bot.api.editMessageText(userId, messageId, text, {
+    await bot.api.editMessageText(userId, messageId, text, {
       parse_mode: options?.parseMode,
     });
-    if (result === true) {
-      return messageId;
-    }
-    return result.message_id;
   }
 
   async sendReaction(userId: string, messageId: number): Promise<void> {
     const bot = this.telegramClient.getBot();
     await bot.api.setMessageReaction(userId, messageId, [{ type: 'emoji', emoji: '👍' }]);
+  }
+
+  async removeReaction(userId: string, messageId: number): Promise<void> {
+    const bot = this.telegramClient.getBot();
+    await bot.api.setMessageReaction(userId, messageId, []);
   }
 
   async sendTyping(userId: string): Promise<void> {

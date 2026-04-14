@@ -7,12 +7,12 @@ export interface AgentConfig {
 }
 
 export interface ACPClientOpts {
-  sendMessage: (text: string, parseMode?: 'HTML') => Promise<number>;
-  editMessage: (msgId: number, text: string, parseMode?: 'HTML') => Promise<number>;
+  sendMessage: (text: string) => Promise<number>;
+  editMessage: (msgId: number, text: string) => Promise<void>;
+  removeReaction?: (msgId: number) => Promise<void>;
   sendTyping?: () => Promise<void>;
   onThoughtFlush?: (text: string) => Promise<void>;
   onMediaUpload?: (path: string, type: 'image' | 'audio') => Promise<void>;
-  log?: (msg: string) => void;
   showThoughts?: boolean;
 }
 

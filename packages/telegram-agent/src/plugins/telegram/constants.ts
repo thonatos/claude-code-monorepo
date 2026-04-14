@@ -4,4 +4,4 @@ export enum InjectEnum {
   Client = 'ARTUSX_TELEGRAM_CLIENT',
 }
 
-export const DEFAULT_SCOPE = ScopeEnum.SINGLETON;
+export const DEFAULT_SCOPE = ScopeEnum.TRANSIENT;
