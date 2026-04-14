@@ -1,4 +1,3 @@
-import { type ChildProcess } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
@@ -47,8 +46,6 @@ export class BridgeService {
     void this.logger;
     void this.processManager;
     void this.ensureUserSession;
-    // Legacy fields - will be removed in subsequent refactoring
-    void this.isInitialized;
   }
 
   private get logger() {
@@ -169,17 +166,14 @@ export class BridgeService {
     this.connections.set(userId, connection);
 
     // TODO: Remove these legacy field assignments after subsequent refactoring
-    // These are kept temporarily for compatibility with handleUserMessage/sendPrompt/close
+    // These are kept temporarily for compatibility with handleUserMessage/sendPrompt
     this.connection = connection;
     this.currentSessionId = sessionResult.sessionId;
-    this.isInitialized = true;
   }
 
   // Legacy fields - will be removed in subsequent refactoring
-  private agentProcess: ChildProcess | null = null;
   private connection: acp.ClientSideConnection | null = null;
   private currentSessionId: string | null = null;
-  private isInitialized = false;
 
   async handleUserMessage(userId: string, message: any): Promise<void> {
     await this.ensureConnection(userId);
@@ -241,13 +235,20 @@ export class BridgeService {
   }
 
   async close(): Promise<void> {
-    if (this.agentProcess) {
-      this.agentProcess.kill();
-      this.agentProcess = null;
+    this.logger.info("[bridge] Closing all connections...");
+
+    // Close all user sessions
+    for (const userId of this.sessions.keys()) {
+      await this.closeUserSession(userId);
     }
-    this.connection = null;
-    this.currentSessionId = null;
-    this.isInitialized = false;
+
+    // Graceful shutdown of agent process
+    await this.processManager.gracefulShutdown(this.logger);
+
+    this.sessions.clear();
+    this.connections.clear();
     this.acpClient.reset();
+
+    this.logger.info("[bridge] All connections closed");
   }
 }
