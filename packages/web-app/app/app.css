@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Trading Terminal Theme */
+@theme {
+  --color-trading-bg-primary: #0a0e17;
+  --color-trading-bg-secondary: #111827;
+  --color-trading-bg-card: #1a2234;
+  --color-trading-bg-elevated: #232d42;
+  --color-trading-border: #2d3a52;
+  --color-trading-text-primary: #f1f5f9;
+  --color-trading-text-secondary: #94a3b8;
+  --color-trading-text-muted: #64748b;
+  --color-trading-green: #22c55e;
+  --color-trading-green-dim: rgba(34, 197, 94, 0.15);
+  --color-trading-red: #ef4444;
+  --color-trading-red-dim: rgba(239, 68, 68, 0.15);
+  --color-trading-amber: #f59e0b;
+  --color-trading-amber-dim: rgba(245, 158, 11, 0.15);
+  --color-trading-blue: #3b82f6;
+  --color-trading-blue-dim: rgba(59, 130, 246, 0.15);
+  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Dark Theme (default) */
+:root {
+  --bg-primary: var(--color-trading-bg-primary);
+  --bg-secondary: var(--color-trading-bg-secondary);
+  --bg-card: var(--color-trading-bg-card);
+  --bg-elevated: var(--color-trading-bg-elevated);
+  --border: var(--color-trading-border);
+  --text-primary: var(--color-trading-text-primary);
+  --text-secondary: var(--color-trading-text-secondary);
+  --text-muted: var(--color-trading-text-muted);
+  --accent-green: var(--color-trading-green);
+  --accent-green-dim: var(--color-trading-green-dim);
+  --accent-red: var(--color-trading-red);
+  --accent-red-dim: var(--color-trading-red-dim);
+  --accent-amber: var(--color-trading-amber);
+  --accent-amber-dim: var(--color-trading-amber-dim);
+  --accent-blue: var(--color-trading-blue);
+  --accent-blue-dim: var(--color-trading-blue-dim);
+}
+
+/* Light Theme */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --border: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
