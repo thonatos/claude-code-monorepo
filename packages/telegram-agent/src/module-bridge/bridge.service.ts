@@ -2,15 +2,21 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
+import type { ArtusApplication } from "@artusx/core";
 import { BotService } from "../module-bot/bot.service";
 import { MediaHandler } from "../module-bot/media.handler";
+import { AuthService } from "../module-auth/auth.service";
+import { AgentProcessManager } from "./agent-process-manager";
 import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
-import type { WebhookRequest } from "../types";
+import type { WebhookRequest, UserSession, AppConfig } from "../types";
 
 @Injectable()
 export class BridgeService {
   @Inject(ArtusInjectEnum.Application)
-  app!: any;
+  app!: ArtusApplication;
+
+  @Inject(ArtusInjectEnum.Config)
+  config!: AppConfig;
 
   @Inject(BotService)
   botService!: BotService;
@@ -21,6 +27,35 @@ export class BridgeService {
   @Inject(ACPInjectEnum.ACPClient)
   acpClient!: ACPClient;
 
+  @Inject(AuthService)
+  authService!: AuthService;
+
+  @Inject(AgentProcessManager)
+  processManager!: AgentProcessManager;
+
+  // Session management (will be used in subsequent tasks)
+  private sessions: Map<string, UserSession> = new Map();
+  private connections: Map<string, acp.ClientSideConnection> = new Map();
+  private readonly MAX_CONCURRENT_USERS: number;
+
+  constructor() {
+    this.MAX_CONCURRENT_USERS = 10;
+    // Silence TypeScript unused variable warnings - these will be used in subsequent tasks
+    void this.sessions;
+    void this.connections;
+    void this.MAX_CONCURRENT_USERS;
+    void this.logger;
+  }
+
+  private get logger() {
+    return {
+      info: (msg: string) => console.log(msg),
+      warn: (msg: string) => console.warn(msg),
+      error: (msg: string) => console.error(msg),
+    };
+  }
+
+  // Legacy fields - will be removed in subsequent refactoring
   private agentProcess: ChildProcess | null = null;
   private connection: acp.ClientSideConnection | null = null;
   private currentSessionId: string | null = null;
