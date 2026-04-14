@@ -45,6 +45,7 @@ export class BridgeService {
     void this.connections;
     void this.MAX_CONCURRENT_USERS;
     void this.logger;
+    void this.ensureUserSession;
   }
 
   private get logger() {
@@ -53,6 +54,44 @@ export class BridgeService {
       warn: (msg: string) => console.warn(msg),
       error: (msg: string) => console.error(msg),
     };
+  }
+
+  /**
+   * Ensure user session exists, create if needed
+   */
+  private async ensureUserSession(userId: string): Promise<UserSession> {
+    const existing = this.sessions.get(userId);
+    if (existing) {
+      existing.lastActivity = new Date();
+      return existing;
+    }
+
+    // Check concurrent limit
+    const maxUsers = this.config.session?.maxConcurrentUsers ?? this.MAX_CONCURRENT_USERS;
+    if (this.sessions.size >= maxUsers) {
+      throw new Error(`Maximum concurrent users (${maxUsers}) reached`);
+    }
+
+    // Create new session
+    const session: UserSession = {
+      sessionId: `${userId}-${Date.now()}`,
+      lastActivity: new Date(),
+    };
+    this.sessions.set(userId, session);
+    this.logger.info(`[bridge] Created session for user ${userId}`);
+    return session;
+  }
+
+  /**
+   * Close user session and cleanup resources
+   */
+  async closeUserSession(userId: string): Promise<void> {
+    const connection = this.connections.get(userId);
+    if (connection) {
+      this.connections.delete(userId);
+    }
+    this.sessions.delete(userId);
+    this.logger.info(`[bridge] Closed session for user ${userId}`);
   }
 
   // Legacy fields - will be removed in subsequent refactoring
