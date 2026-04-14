@@ -4,7 +4,7 @@ import { BridgeService } from "../module-bridge/bridge.service";
 import { BotService } from "./bot.service";
 
 @Injectable({
-  scope: ScopeEnum.SINGLETON,
+  scope: ScopeEnum.TRANSIENT,
 })
 export class CommandHandler {
   @Inject(BotService)

@@ -2,13 +2,15 @@
  * Reaction service for managing Telegram message reactions.
  */
 
-import { Inject, Injectable } from "@artusx/core";
+import { Inject, Injectable, ScopeEnum } from "@artusx/core";
 import type TelegramClient from "../plugins/telegram/client";
 import { InjectEnum as TelegramInjectEnum } from "../plugins/telegram/constants";
-import { DEFAULT_EMOJI_MAP, REACTION_DEBOUNCE_MS } from "./reaction.constants";
-import type { ReactionPhase, ReactionState } from "./reaction.types";
+import { DEFAULT_EMOJI_MAP, REACTION_DEBOUNCE_MS } from "../constants";
+import type { ReactionPhase, ReactionState } from "../types";
 
-@Injectable()
+@Injectable({
+  scope: ScopeEnum.SINGLETON,
+})
 export class ReactionService {
   @Inject(TelegramInjectEnum.Client)
   private telegramClient!: TelegramClient;

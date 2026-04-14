@@ -86,3 +86,8 @@ export interface UserSession {
 }
 
 export type ReactionPhase = "thought" | "tool" | "done";
+
+export interface ReactionState {
+  currentPhase: ReactionPhase | null;
+  lastUpdateAt: number;
+}

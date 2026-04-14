@@ -3,8 +3,6 @@ import { LifecycleHookUnit, LifecycleHook, Inject, ArtusInjectEnum } from '@artu
 import type { ArtusApplication } from '@artusx/core';
 
 import { defaultMediaDir } from './constants';
-import type TelegramClient from './plugins/telegram/client';
-import { InjectEnum as TelegramInjectEnum } from './plugins/telegram/constants';
 import { BotService } from './module-bot/bot.service';
 import { CommandHandler } from './module-bot/command.handler';
 import { MessageHandler } from './module-bot/message.handler';
@@ -14,8 +12,6 @@ export default class TelegramAgentLifecycle {
   @Inject(ArtusInjectEnum.Application)
   private readonly app!: ArtusApplication;
 
-  @Inject(TelegramInjectEnum.Client)
-  private telegramClient!: TelegramClient;
   @Inject(BotService)
   private botService!: BotService;
   @Inject(CommandHandler)
@@ -25,10 +21,6 @@ export default class TelegramAgentLifecycle {
 
   get logger() {
     return this.app.logger;
-  }
-
-  get telegram() {
-    return this.telegramClient.getBot();
   }
 
   @LifecycleHook()
@@ -51,31 +43,13 @@ export default class TelegramAgentLifecycle {
   didReady() {
     this.logger.info('[telegram-agent] Application fully ready');
 
-    // Register command handlers
-    const COMMANDS = [
-      { command: "start", description: "Create or restore session" },
-      { command: "help", description: "Show available commands" },
-      { command: "status", description: "Show session details" },
-      { command: "restart", description: "Restart session" },
-      { command: "clear", description: "Clear state" },
-    ];
+    // Setup all bot handlers
+    this.botService.setupHandlers(
+      this.commandHandler,
+      (ctx) => this.messageHandler.handle(ctx)
+    );
 
-    this.botService.setupCommandHandler("start", (ctx) => this.commandHandler.handleStart(ctx));
-    this.botService.setupCommandHandler("help", (ctx) => this.commandHandler.handleHelp(ctx));
-    this.botService.setupCommandHandler("status", (ctx) => this.commandHandler.handleStatus(ctx));
-    this.botService.setupCommandHandler("restart", (ctx) => this.commandHandler.handleRestart(ctx));
-    this.botService.setupCommandHandler("clear", (ctx) => this.commandHandler.handleClear(ctx));
-
-    this.logger.info('[telegram-agent] Command handlers registered');
-
-    // Register message handler to connect Telegram -> ACP Agent
-    this.botService.setupMessageHandler((ctx) => this.messageHandler.handle(ctx));
-    this.logger.info('[telegram-agent] Message handler registered');
-
-    // Set bot commands menu
-    this.botService.setMyCommands(COMMANDS).catch((err) => {
-      this.logger.warn(`[telegram-agent] Failed to set commands: ${err.message}`);
-    });
+    this.logger.info('[telegram-agent] Bot handlers registered');
   }
 
   @LifecycleHook()

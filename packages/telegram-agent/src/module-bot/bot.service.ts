@@ -4,10 +4,11 @@ import { InputFile } from "grammy";
 import type TelegramClient from "../plugins/telegram/client";
 import { InjectEnum as TelegramInjectEnum } from "../plugins/telegram/constants";
 import type { ReactionPhase, SendMessageOptions } from "../types";
+import { CommandHandler } from "./command.handler";
 import { ReactionService } from "./reaction.service";
 
 @Injectable({
-  scope: ScopeEnum.TRANSIENT,
+  scope: ScopeEnum.SINGLETON,
 })
 export class BotService {
   @Inject(TelegramInjectEnum.Client)
@@ -15,6 +16,14 @@ export class BotService {
 
   @Inject(ReactionService)
   private reactionService!: ReactionService;
+
+  private readonly COMMANDS = [
+    { command: "start", description: "Create or restore session" },
+    { command: "help", description: "Show available commands" },
+    { command: "status", description: "Show session details" },
+    { command: "restart", description: "Restart session" },
+    { command: "clear", description: "Clear state" },
+  ];
 
   async sendMessage(userId: string, text: string, options?: SendMessageOptions): Promise<number> {
     const bot = this.telegramClient.getBot();
@@ -71,18 +80,28 @@ export class BotService {
     return file.file_path || "";
   }
 
-  setupMessageHandler(handler: (ctx: Context) => Promise<void>): void {
+  /**
+   * Setup all handlers (commands + messages) for the bot.
+   */
+  setupHandlers(
+    commandHandler: CommandHandler,
+    messageHandler: (ctx: Context) => Promise<void>
+  ): void {
     const bot = this.telegramClient.getBot();
-    bot.on("message", handler);
-  }
 
-  setupCommandHandler(command: string, handler: (ctx: Context) => Promise<void>): void {
-    const bot = this.telegramClient.getBot();
-    bot.command(command, handler);
-  }
+    // Register command handlers
+    bot.command("start", (ctx) => commandHandler.handleStart(ctx));
+    bot.command("help", (ctx) => commandHandler.handleHelp(ctx));
+    bot.command("status", (ctx) => commandHandler.handleStatus(ctx));
+    bot.command("restart", (ctx) => commandHandler.handleRestart(ctx));
+    bot.command("clear", (ctx) => commandHandler.handleClear(ctx));
 
-  async setMyCommands(commands: { command: string; description: string }[]): Promise<void> {
-    const bot = this.telegramClient.getBot();
-    await bot.api.setMyCommands(commands, { scope: { type: "all_private_chats" } });
+    // Register message handler
+    bot.on("message", messageHandler);
+
+    // Set command menu
+    bot.api.setMyCommands(this.COMMANDS, { scope: { type: "all_private_chats" } }).catch((err) => {
+      console.warn(`[bot] Failed to set commands: ${err.message}`);
+    });
   }
 }

@@ -1,5 +1,6 @@
 import os from "node:os";
 import path from "node:path";
+import type { ReactionPhase } from "../types";
 
 /**
  * Agent Presets
@@ -78,3 +79,17 @@ export function resolvePreset(
   if (!preset) return null;
   return { id: presetName, preset };
 }
+
+/**
+ * Emoji mapping for reaction phases.
+ */
+export const DEFAULT_EMOJI_MAP: Record<ReactionPhase, string> = {
+  thought: "🤔",
+  tool: "🔧",
+  done: "✅",
+};
+
+/**
+ * Minimum delay between reaction API calls (ms).
+ */
+export const REACTION_DEBOUNCE_MS = 500;
