@@ -5,6 +5,7 @@ import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
 import { AuthService } from "../module-bot/auth.service";
 import { BotService } from "../module-bot/bot.service";
 import { MediaHandler } from "../module-bot/media.handler";
+import { ReactionService } from "../module-bot/reaction.service";
 import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
 import type { AppConfig, UserSession, WebhookRequest } from "../types";
 import { AgentProcessService } from "./agent-process.service";
@@ -22,6 +23,9 @@ export class BridgeService {
 
   @Inject(MediaHandler)
   mediaHandler!: MediaHandler;
+
+  @Inject(ReactionService)
+  reactionService!: ReactionService;
 
   @Inject(ACPInjectEnum.ACPClient)
   acpClient!: ACPClient;
@@ -80,6 +84,21 @@ export class BridgeService {
     this.sessions.set(userId, session);
     this.logger.info(`[bridge] Created session for user ${userId}`);
     return session;
+  }
+
+  /**
+   * Get user session if exists
+   */
+  getUserSession(userId: string): UserSession | undefined {
+    return this.sessions.get(userId);
+  }
+
+  /**
+   * Reset reaction state for user
+   */
+  resetReactionState(userId: string): void {
+    this.acpClient.reset();
+    this.reactionService.reset(userId);
   }
 
   /**

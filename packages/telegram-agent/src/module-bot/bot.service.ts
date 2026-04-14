@@ -75,4 +75,14 @@ export class BotService {
     const bot = this.telegramClient.getBot();
     bot.on("message", handler);
   }
+
+  setupCommandHandler(command: string, handler: (ctx: Context) => Promise<void>): void {
+    const bot = this.telegramClient.getBot();
+    bot.command(command, handler);
+  }
+
+  async setMyCommands(commands: { command: string; description: string }[]): Promise<void> {
+    const bot = this.telegramClient.getBot();
+    await bot.api.setMyCommands(commands, { scope: { type: "all_private_chats" } });
+  }
 }
