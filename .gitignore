@@ -6,6 +6,10 @@ build/
 .pnpm-store/
 .pnpm-debug.log*
 
+# React Router
+.react-router/
+build/
+
 # Bun
 bun.lock
 
