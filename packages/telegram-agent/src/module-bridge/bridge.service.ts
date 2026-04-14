@@ -1,4 +1,4 @@
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
@@ -45,7 +45,10 @@ export class BridgeService {
     void this.connections;
     void this.MAX_CONCURRENT_USERS;
     void this.logger;
+    void this.processManager;
     void this.ensureUserSession;
+    // Legacy fields - will be removed in subsequent refactoring
+    void this.isInitialized;
   }
 
   private get logger() {
@@ -94,20 +97,14 @@ export class BridgeService {
     this.logger.info(`[bridge] Closed session for user ${userId}`);
   }
 
-  // Legacy fields - will be removed in subsequent refactoring
-  private agentProcess: ChildProcess | null = null;
-  private connection: acp.ClientSideConnection | null = null;
-  private currentSessionId: string | null = null;
-  private isInitialized = false;
-
   async ensureConnection(userId: string): Promise<void> {
-    if (this.isInitialized) return;
+    // Check for existing connection
+    if (this.connections.has(userId)) return;
 
-    const config = this.app?.config?.agent;
-    console.log("[bridge] Initializing connection with config:", config);
-    if (!config) {
-      throw new Error("ACP agent config not found");
-    }
+    const session = await this.ensureUserSession(userId);
+    const agentConfig = this.config.agent;
+
+    this.logger.info(`[bridge] Initializing connection for user ${userId}`);
 
     // Initialize client callbacks
     this.acpClient.init({
@@ -130,33 +127,27 @@ export class BridgeService {
           await this.mediaHandler.uploadAudio(userId, path);
         }
       },
-      showThoughts: config.showThoughts,
+      showThoughts: agentConfig.showThoughts,
     });
 
-    // Spawn agent process
-    this.agentProcess = spawn(config.command, config.args, {
-      cwd: config.cwd || process.cwd(),
-      env: {
-        ...process.env,
-        ...config.env,
-      },
-      stdio: ["pipe", "pipe", "inherit"],
-    });
+    // Spawn agent process using ProcessManager
+    const agentProcess = this.processManager.spawn(agentConfig, this.logger);
 
-    this.agentProcess.on("error", (err: Error) => {
-      console.error("[bridge] Process error:", err);
-    });
+    // Verify streams exist
+    if (!agentProcess.stdin || !agentProcess.stdout) {
+      throw new Error("Failed to create agent process streams");
+    }
 
     // Create streams
-    const input = Writable.toWeb(this.agentProcess.stdin!);
-    const output = Readable.toWeb(this.agentProcess.stdout!);
+    const input = Writable.toWeb(agentProcess.stdin);
+    const output = Readable.toWeb(agentProcess.stdout);
 
     // Create the connection
     const stream = acp.ndJsonStream(input, output);
-    this.connection = new acp.ClientSideConnection((_agent) => this.acpClient, stream);
+    const connection = new acp.ClientSideConnection((_agent) => this.acpClient, stream);
 
     // Initialize
-    const initResult = await this.connection.initialize({
+    const initResult = await connection.initialize({
       protocolVersion: acp.PROTOCOL_VERSION,
       clientCapabilities: {
         fs: {
@@ -166,17 +157,29 @@ export class BridgeService {
       },
     });
 
-    console.log(`[bridge] Connected to agent (protocol v${initResult.protocolVersion})`);
+    this.logger.info(`[bridge] Connected to agent (protocol v${initResult.protocolVersion})`);
 
     // Create session
-    const sessionResult = await this.connection.newSession({
-      cwd: config.cwd || process.cwd(),
+    const sessionResult = await connection.newSession({
+      cwd: agentConfig.cwd || process.cwd(),
       mcpServers: [],
     });
 
+    session.sessionId = sessionResult.sessionId;
+    this.connections.set(userId, connection);
+
+    // TODO: Remove these legacy field assignments after subsequent refactoring
+    // These are kept temporarily for compatibility with handleUserMessage/sendPrompt/close
+    this.connection = connection;
     this.currentSessionId = sessionResult.sessionId;
     this.isInitialized = true;
   }
+
+  // Legacy fields - will be removed in subsequent refactoring
+  private agentProcess: ChildProcess | null = null;
+  private connection: acp.ClientSideConnection | null = null;
+  private currentSessionId: string | null = null;
+  private isInitialized = false;
 
   async handleUserMessage(userId: string, message: any): Promise<void> {
     await this.ensureConnection(userId);
