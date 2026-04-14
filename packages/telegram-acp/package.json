@@ -25,7 +25,10 @@
     "start": "node dist/bin/telegram-acp.js",
     "dev": "tsc --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "biome check ./src",
+    "lint:fix": "biome check ./src --write --unsafe",
+    "format": "biome format ./src --write"
   },
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "^0.25.1",

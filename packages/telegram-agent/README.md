@@ -192,6 +192,14 @@ This project follows ArtusX Module-based organization:
 - Controllers handle HTTP routes
 - Plugins provide cross-cutting concerns
 
+### Code Quality
+
+```bash
+pnpm run lint       # Check code quality (biome)
+pnpm run lint:fix   # Auto-fix lint issues
+pnpm run format     # Format code
+```
+
 ### Adding New Features
 
 1. Create new module directory

@@ -17,8 +17,9 @@
     "dev": "ARTUS_SERVER_ENV=development npx nodemon src/index.ts",
     "start": "ARTUS_SERVER_ENV=production node dist/index.js",
     "tsc": "rm -rf dist && tsc",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
+    "lint": "biome check ./src/**/*.ts",
+    "lint:fix": "biome check ./src/**/*.ts --write",
+    "format": "biome format ./src/**/*.ts --write",
     "test": "vitest run"
   },
   "dependencies": {
@@ -33,12 +34,8 @@
     "yaml": "^2.8.3"
   },
   "devDependencies": {
-    "@artusx/eslint-config": "latest",
     "@artusx/tsconfig": "latest",
     "@types/node": "^18.11.17",
-    "@typescript-eslint/eslint-plugin": "~6.19.1",
-    "eslint": "~8.56.0",
-    "eslint-plugin-import": "~2.29.1",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^5",

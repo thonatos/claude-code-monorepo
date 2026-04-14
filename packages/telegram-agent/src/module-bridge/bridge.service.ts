@@ -1,11 +1,11 @@
-import { Injectable, Inject, ArtusInjectEnum } from '@artusx/core';
-import { spawn, type ChildProcess } from 'child_process';
-import { Writable, Readable } from 'stream';
-import * as acp from '@agentclientprotocol/sdk';
-import { BotService } from '../module-bot/bot.service';
-import { MediaHandler } from '../module-bot/media.handler';
-import { ACPClient, InjectEnum as ACPInjectEnum } from '../plugins/acp';
-import type { WebhookRequest } from '../types';
+import { type ChildProcess, spawn } from "node:child_process";
+import { Readable, Writable } from "node:stream";
+import * as acp from "@agentclientprotocol/sdk";
+import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
+import { BotService } from "../module-bot/bot.service";
+import { MediaHandler } from "../module-bot/media.handler";
+import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
+import type { WebhookRequest } from "../types";
 
 @Injectable()
 export class BridgeService {
@@ -26,63 +26,63 @@ export class BridgeService {
   private currentSessionId: string | null = null;
   private isInitialized = false;
 
-async ensureConnection(userId: string): Promise<void> {
-  if (this.isInitialized) return;
+  async ensureConnection(userId: string): Promise<void> {
+    if (this.isInitialized) return;
 
-  const config = this.app?.config?.agent;
-  console.log('[bridge] Initializing connection with config:', config);
-   if (!config) {
-    throw new Error('ACP agent config not found');
-  }
+    const config = this.app?.config?.agent;
+    console.log("[bridge] Initializing connection with config:", config);
+    if (!config) {
+      throw new Error("ACP agent config not found");
+    }
 
-  // Initialize client callbacks
-  this.acpClient.init({
-    sendMessage: async (text: string) => {
-      return await this.botService.sendMessage(userId, text);
-    },
-    editMessage: async (msgId: number, text: string) => {
-      await this.botService.editMessage(userId, msgId, text);
-    },
-    removeReaction: async (msgId: number) => {
-      await this.botService.removeReaction(userId, msgId);
-    },
-    sendTyping: async () => {
-      await this.botService.sendTyping(userId);
-    },
-    onMediaUpload: async (path: string, type: 'image' | 'audio') => {
-      if (type === 'image') {
-        await this.mediaHandler.uploadPhoto(userId, path);
-      } else {
-        await this.mediaHandler.uploadAudio(userId, path);
-      }
-    },
-    showThoughts: config.showThoughts,
-   });
+    // Initialize client callbacks
+    this.acpClient.init({
+      sendMessage: async (text: string) => {
+        return await this.botService.sendMessage(userId, text);
+      },
+      editMessage: async (msgId: number, text: string) => {
+        await this.botService.editMessage(userId, msgId, text);
+      },
+      removeReaction: async (msgId: number) => {
+        await this.botService.removeReaction(userId, msgId);
+      },
+      sendTyping: async () => {
+        await this.botService.sendTyping(userId);
+      },
+      onMediaUpload: async (path: string, type: "image" | "audio") => {
+        if (type === "image") {
+          await this.mediaHandler.uploadPhoto(userId, path);
+        } else {
+          await this.mediaHandler.uploadAudio(userId, path);
+        }
+      },
+      showThoughts: config.showThoughts,
+    });
 
-   // Spawn agent process
+    // Spawn agent process
     this.agentProcess = spawn(config.command, config.args, {
       cwd: config.cwd || process.cwd(),
-     env: {
-       ...process.env,
+      env: {
+        ...process.env,
         ...config.env,
-     },
-     stdio: ['pipe', 'pipe', 'inherit'],
-   });
+      },
+      stdio: ["pipe", "pipe", "inherit"],
+    });
 
-   this.agentProcess.on('error', (err: Error) => {
-     console.error('[bridge] Process error:', err);
-   });
+    this.agentProcess.on("error", (err: Error) => {
+      console.error("[bridge] Process error:", err);
+    });
 
-   // Create streams
-   const input = Writable.toWeb(this.agentProcess.stdin!);
-   const output = Readable.toWeb(this.agentProcess.stdout!);
+    // Create streams
+    const input = Writable.toWeb(this.agentProcess.stdin!);
+    const output = Readable.toWeb(this.agentProcess.stdout!);
 
-   // Create the connection
-   const stream = acp.ndJsonStream(input, output);
-   this.connection = new acp.ClientSideConnection((_agent) => this.acpClient, stream);
+    // Create the connection
+    const stream = acp.ndJsonStream(input, output);
+    this.connection = new acp.ClientSideConnection((_agent) => this.acpClient, stream);
 
-   // Initialize
-   const initResult = await this.connection.initialize({
+    // Initialize
+    const initResult = await this.connection.initialize({
       protocolVersion: acp.PROTOCOL_VERSION,
       clientCapabilities: {
         fs: {
@@ -108,7 +108,7 @@ async ensureConnection(userId: string): Promise<void> {
     await this.ensureConnection(userId);
 
     if (!this.connection || !this.currentSessionId) {
-      throw new Error('Connection not initialized');
+      throw new Error("Connection not initialized");
     }
 
     // Set user message ID for reaction tracking
@@ -135,7 +135,7 @@ async ensureConnection(userId: string): Promise<void> {
       sessionId: this.currentSessionId,
       prompt: [
         {
-          type: 'text',
+          type: "text",
           text: prompt,
         },
       ],
@@ -146,17 +146,17 @@ async ensureConnection(userId: string): Promise<void> {
     const { userId, action, data } = request;
 
     switch (action) {
-      case 'send-message':
+      case "send-message":
         return await this.botService.sendMessage(userId, data.text, data.options);
-      case 'send-media':
-        if (data.type === 'image') {
+      case "send-media":
+        if (data.type === "image") {
           return await this.mediaHandler.uploadPhoto(userId, data.filePath);
         } else {
           return await this.mediaHandler.uploadAudio(userId, data.filePath);
         }
-      case 'edit-message':
+      case "edit-message":
         return await this.botService.editMessage(userId, data.messageId, data.text, data.options);
-      case 'send-reaction':
+      case "send-reaction":
         return await this.botService.sendReaction(userId, data.messageId);
       default:
         throw new Error(`Unknown action: ${action}`);

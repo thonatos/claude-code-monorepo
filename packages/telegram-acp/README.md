@@ -327,8 +327,11 @@ Runtime files stored under:
 ```bash
 pnpm install
 pnpm run build
-pnpm run dev  # watch mode
-pnpm run test # run tests
+pnpm run dev        # watch mode
+pnpm run test       # run tests
+pnpm run lint       # check code quality (biome)
+pnpm run lint:fix   # auto-fix lint issues
+pnpm run format     # format code
 ```
 
 ## License

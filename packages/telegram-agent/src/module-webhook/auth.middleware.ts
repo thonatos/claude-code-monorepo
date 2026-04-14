@@ -1,5 +1,5 @@
-import { Middleware } from '@artusx/core';
-import type { ArtusXContext, ArtusXNext } from '@artusx/core';
+import type { ArtusXContext, ArtusXNext } from "@artusx/core";
+import { Middleware } from "@artusx/core";
 
 @Middleware({
   enable: true,
@@ -14,14 +14,14 @@ export class AuthMiddleware {
       return;
     }
 
-    const token = ctx.headers['authorization']?.replace('Bearer ', '');
+    const token = ctx.headers.authorization?.replace("Bearer ", "");
     const configToken = config.artusx?.webhook?.token;
 
     if (!token || token !== configToken) {
       ctx.status = 401;
       ctx.body = {
-        error: 'Unauthorized',
-        message: 'Invalid or missing authorization token',
+        error: "Unauthorized",
+        message: "Invalid or missing authorization token",
       };
       return;
     }

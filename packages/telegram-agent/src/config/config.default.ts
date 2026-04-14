@@ -1,25 +1,25 @@
-import fs from 'fs';
-import path from 'path';
-import { parse as parseYaml } from 'yaml';
+import fs from "node:fs";
+import path from "node:path";
+import { parse as parseYaml } from "yaml";
 import {
-  defaultStorageDir,
-  defaultMediaDir,
+  DEFAULT_AGENT_CONFIG,
   DEFAULT_SESSION_CONFIG,
   DEFAULT_WEBHOOK_CONFIG,
-  DEFAULT_AGENT_CONFIG,
+  defaultMediaDir,
+  defaultStorageDir,
   resolvePreset,
-} from '../constants';
-import type { TelegramAgentConfig } from '../types';
+} from "../constants";
+import type { TelegramAgentConfig } from "../types";
 
 function loadConfigFromFile(): Partial<TelegramAgentConfig> {
-  const configPath = path.join(defaultStorageDir(), 'config.yaml');
+  const configPath = path.join(defaultStorageDir(), "config.yaml");
 
   if (!fs.existsSync(configPath)) {
     return {};
   }
 
   try {
-    const content = fs.readFileSync(configPath, 'utf-8');
+    const content = fs.readFileSync(configPath, "utf-8");
     return parseYaml(content) as Partial<TelegramAgentConfig>;
   } catch (err) {
     console.error(`Failed to parse config file ${configPath}: ${String(err)}`);
@@ -32,7 +32,7 @@ export default () => {
 
   const config: TelegramAgentConfig = {
     telegram: {
-      botToken: process.env.TELEGRAM_BOT_TOKEN || fileConfig.telegram?.botToken || '',
+      botToken: process.env.TELEGRAM_BOT_TOKEN || fileConfig.telegram?.botToken || "",
     },
     agent: {
       preset: fileConfig.agent?.preset ?? DEFAULT_AGENT_CONFIG.preset,
@@ -44,18 +44,22 @@ export default () => {
     },
     session: {
       idleTimeoutMs: fileConfig.session?.idleTimeoutMs ?? DEFAULT_SESSION_CONFIG.idleTimeoutMs,
-      maxConcurrentUsers: fileConfig.session?.maxConcurrentUsers ?? DEFAULT_SESSION_CONFIG.maxConcurrentUsers,
+      maxConcurrentUsers:
+        fileConfig.session?.maxConcurrentUsers ?? DEFAULT_SESSION_CONFIG.maxConcurrentUsers,
       autoRecover: fileConfig.session?.autoRecover ?? DEFAULT_SESSION_CONFIG.autoRecover,
     },
     webhook: {
-      token: process.env.TELEGRAM_WEBHOOK_TOKEN ?? fileConfig.webhook?.token ?? DEFAULT_WEBHOOK_CONFIG.token,
+      token:
+        process.env.TELEGRAM_WEBHOOK_TOKEN ??
+        fileConfig.webhook?.token ??
+        DEFAULT_WEBHOOK_CONFIG.token,
       enableAuth: fileConfig.webhook?.enableAuth ?? DEFAULT_WEBHOOK_CONFIG.enableAuth,
     },
     media: {
       tempDir: fileConfig.media?.tempDir ?? defaultMediaDir(),
     },
     allowedUsers: fileConfig.allowedUsers ?? [],
-    proxy: fileConfig.proxy ?? '',
+    proxy: fileConfig.proxy ?? "",
   };
 
   // Resolve preset if specified
@@ -73,13 +77,13 @@ export default () => {
   return {
     ...config,
     artusx: {
-      keys: 'artusx-koa',
+      keys: "artusx-koa",
       port: 7001,
       static: {
         dirs: [
           {
-            prefix: '/public/',
-            dir: path.resolve(__dirname, '../public'),
+            prefix: "/public/",
+            dir: path.resolve(__dirname, "../public"),
           },
         ],
         dynamic: true,

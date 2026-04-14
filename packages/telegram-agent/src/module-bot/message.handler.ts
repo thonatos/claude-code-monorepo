@@ -1,7 +1,7 @@
-import { Injectable, Inject, ScopeEnum } from '@artusx/core';
-import type { Context } from 'grammy';
-import { BotService } from './bot.service';
-import { BridgeService } from '../module-bridge/bridge.service';
+import { Inject, Injectable, ScopeEnum } from "@artusx/core";
+import type { Context } from "grammy";
+import { BridgeService } from "../module-bridge/bridge.service";
+import { BotService } from "./bot.service";
 
 @Injectable({
   scope: ScopeEnum.TRANSIENT,

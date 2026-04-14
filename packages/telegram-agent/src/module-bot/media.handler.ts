@@ -1,8 +1,8 @@
-import { Injectable, Inject, ArtusInjectEnum } from '@artusx/core';
-import path from 'path';
-import fs from 'fs';
-import { BotService } from './bot.service';
-import { defaultMediaDir } from '../constants';
+import fs from "node:fs";
+import path from "node:path";
+import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
+import { defaultMediaDir } from "../constants";
+import { BotService } from "./bot.service";
 
 @Injectable()
 export class MediaHandler {

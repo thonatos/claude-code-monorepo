@@ -40,6 +40,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/telegram-agent/src/**/*.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "error"
+          }
+        }
+      }
     }
   ]
 }

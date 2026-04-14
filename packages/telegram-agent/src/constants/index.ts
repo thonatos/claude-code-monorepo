@@ -1,24 +1,27 @@
-import os from 'os';
-import path from 'path';
+import os from "node:os";
+import path from "node:path";
 
 /**
  * Agent Presets
  */
-export const PRESETS: Record<string, { label: string; command: string; args: string[]; env?: Record<string, string> }> = {
+export const PRESETS: Record<
+  string,
+  { label: string; command: string; args: string[]; env?: Record<string, string> }
+> = {
   claude: {
-    label: 'Claude Code',
-    command: 'pnpx',
-    args: ['@agentclientprotocol/claude-agent-acp'],
+    label: "Claude Code",
+    command: "pnpx",
+    args: ["@agentclientprotocol/claude-agent-acp"],
   },
   codex: {
-    label: 'Codex CLI',
-    command: 'pnpx',
-    args: ['@zed-industries/codex-acp'],
+    label: "Codex CLI",
+    command: "pnpx",
+    args: ["@zed-industries/codex-acp"],
   },
   copilot: {
-    label: 'GitHub Copilot',
-    command: 'pnpx',
-    args: ['@github/copilot', '--acp', '--yolo'],
+    label: "GitHub Copilot",
+    command: "pnpx",
+    args: ["@github/copilot", "--acp", "--yolo"],
   },
 };
 
@@ -26,14 +29,14 @@ export const PRESETS: Record<string, { label: string; command: string; args: str
  * Default storage directory
  */
 export function defaultStorageDir(): string {
-  return path.join(os.homedir(), '.telegram-agent');
+  return path.join(os.homedir(), ".telegram-agent");
 }
 
 /**
  * Default media directory
  */
 export function defaultMediaDir(): string {
-  return path.join(defaultStorageDir(), 'media');
+  return path.join(defaultStorageDir(), "media");
 }
 
 /**
@@ -49,7 +52,7 @@ export const DEFAULT_SESSION_CONFIG = {
  * Default webhook config
  */
 export const DEFAULT_WEBHOOK_CONFIG = {
-  token: 'default-webhook-token',
+  token: "default-webhook-token",
   enableAuth: true,
 };
 
@@ -57,9 +60,9 @@ export const DEFAULT_WEBHOOK_CONFIG = {
  * Default agent config
  */
 export const DEFAULT_AGENT_CONFIG = {
-  preset: 'claude',
-  command: 'pnpx',
-  args: ['@agentclientprotocol/claude-agent-acp'],
+  preset: "claude",
+  command: "pnpx",
+  args: ["@agentclientprotocol/claude-agent-acp"],
   cwd: process.cwd(),
   env: {},
   showThoughts: false,
@@ -68,7 +71,9 @@ export const DEFAULT_AGENT_CONFIG = {
 /**
  * Resolve preset by name
  */
-export function resolvePreset(presetName: string): { id: string; preset: typeof PRESETS[keyof typeof PRESETS] } | null {
+export function resolvePreset(
+  presetName: string
+): { id: string; preset: (typeof PRESETS)[keyof typeof PRESETS] } | null {
   const preset = PRESETS[presetName];
   if (!preset) return null;
   return { id: presetName, preset };

@@ -1,11 +1,11 @@
-import { Injectable, Inject, ScopeEnum } from '@artusx/core';
-import { InputFile } from 'grammy';
-import type { SendMessageOptions } from '../types';
-import type { Context } from 'grammy';
-import type TelegramClient from '../plugins/telegram/client';
-import { InjectEnum as TelegramInjectEnum } from '../plugins/telegram/constants';
+import { Inject, Injectable, ScopeEnum } from "@artusx/core";
+import type { Context } from "grammy";
+import { InputFile } from "grammy";
+import type TelegramClient from "../plugins/telegram/client";
+import { InjectEnum as TelegramInjectEnum } from "../plugins/telegram/constants";
+import type { SendMessageOptions } from "../types";
 
-@Injectable({  
+@Injectable({
   scope: ScopeEnum.TRANSIENT,
 })
 export class BotService {
@@ -32,7 +32,12 @@ export class BotService {
     return result.message_id;
   }
 
-  async editMessage(userId: string, messageId: number, text: string, options?: SendMessageOptions): Promise<void> {
+  async editMessage(
+    userId: string,
+    messageId: number,
+    text: string,
+    options?: SendMessageOptions
+  ): Promise<void> {
     const bot = this.telegramClient.getBot();
     await bot.api.editMessageText(userId, messageId, text, {
       parse_mode: options?.parseMode,
@@ -41,7 +46,7 @@ export class BotService {
 
   async sendReaction(userId: string, messageId: number): Promise<void> {
     const bot = this.telegramClient.getBot();
-    await bot.api.setMessageReaction(userId, messageId, [{ type: 'emoji', emoji: '👍' }]);
+    await bot.api.setMessageReaction(userId, messageId, [{ type: "emoji", emoji: "👍" }]);
   }
 
   async removeReaction(userId: string, messageId: number): Promise<void> {
@@ -51,17 +56,17 @@ export class BotService {
 
   async sendTyping(userId: string): Promise<void> {
     const bot = this.telegramClient.getBot();
-    await bot.api.sendChatAction(userId, 'typing');
+    await bot.api.sendChatAction(userId, "typing");
   }
 
   async downloadFile(fileId: string): Promise<string> {
     const bot = this.telegramClient.getBot();
     const file = await bot.api.getFile(fileId);
-    return file.file_path || '';
+    return file.file_path || "";
   }
 
   setupMessageHandler(handler: (ctx: Context) => Promise<void>): void {
     const bot = this.telegramClient.getBot();
-    bot.on('message', handler);
+    bot.on("message", handler);
   }
 }
