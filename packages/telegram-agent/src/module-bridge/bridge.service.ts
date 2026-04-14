@@ -1,13 +1,13 @@
 import { Readable, Writable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
-import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
 import type { ArtusApplication } from "@artusx/core";
+import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
+import { AuthService } from "../module-auth/auth.service";
 import { BotService } from "../module-bot/bot.service";
 import { MediaHandler } from "../module-bot/media.handler";
-import { AuthService } from "../module-auth/auth.service";
-import { AgentProcessManager } from "./agent-process-manager";
 import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
-import type { WebhookRequest, UserSession, AppConfig } from "../types";
+import type { AppConfig, UserSession, WebhookRequest } from "../types";
+import { AgentProcessManager } from "./agent-process-manager";
 
 @Injectable()
 export class BridgeService {

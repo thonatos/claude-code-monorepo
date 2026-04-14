@@ -18,7 +18,14 @@ export class AgentProcessManager {
     return this.process?.pid ?? null;
   }
 
-  spawn(config: TelegramAgentConfig["agent"], logger?: { info: (msg: string) => void; warn: (msg: string) => void; error: (msg: string) => void }): ChildProcess {
+  spawn(
+    config: TelegramAgentConfig["agent"],
+    logger?: {
+      info: (msg: string) => void;
+      warn: (msg: string) => void;
+      error: (msg: string) => void;
+    }
+  ): ChildProcess {
     this.process = spawn(config.command, config.args, {
       cwd: config.cwd || process.cwd(),
       env: { ...process.env, ...config.env },
@@ -31,13 +38,17 @@ export class AgentProcessManager {
 
     this.process.on("exit", (code, signal) => {
       logger?.info(`[process] Agent exited (code: ${code}, signal: ${signal})`);
-      this.exitCallbacks.forEach((cb) => cb(code ?? 0, signal ?? "unknown"));
+      for (const cb of this.exitCallbacks) {
+        cb(code ?? 0, signal ?? "unknown");
+      }
       this.process = null;
     });
 
     this.process.on("error", (err) => {
       logger?.error(`[process] Agent error: ${err.message}`);
-      this.errorCallbacks.forEach((cb) => cb(err));
+      for (const cb of this.errorCallbacks) {
+        cb(err);
+      }
     });
 
     return this.process;
