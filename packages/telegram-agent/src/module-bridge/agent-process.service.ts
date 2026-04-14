@@ -3,7 +3,7 @@ import { Injectable } from "@artusx/core";
 import type { TelegramAgentConfig } from "../types";
 
 @Injectable()
-export class AgentProcessManager {
+export class AgentProcessService {
   private process: ChildProcess | null = null;
   private readonly SHUTDOWN_TIMEOUT_MS = 5000;
 

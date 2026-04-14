@@ -7,7 +7,7 @@ import { BotService } from "../module-bot/bot.service";
 import { MediaHandler } from "../module-bot/media.handler";
 import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
 import type { AppConfig, UserSession, WebhookRequest } from "../types";
-import { AgentProcessManager } from "./agent-process-manager";
+import { AgentProcessService } from "./agent-process.service";
 
 @Injectable()
 export class BridgeService {
@@ -29,8 +29,8 @@ export class BridgeService {
   @Inject(AuthService)
   authService!: AuthService;
 
-  @Inject(AgentProcessManager)
-  processManager!: AgentProcessManager;
+  @Inject(AgentProcessService)
+  processManager!: AgentProcessService;
 
   // Session management (will be used in subsequent tasks)
   private sessions: Map<string, UserSession> = new Map();
