@@ -10,7 +10,7 @@
   ],
   "main": "dist/index.ts",
   "bin": {
-    "telegram-agent": "./dist/index.ts"
+    "telegram-agent": "./dist/bin/cli.js"
   },
   "scripts": {
     "build": "npm run tsc",
