@@ -52,14 +52,17 @@ importers:
   packages/telegram-agent:
     dependencies:
       '@agentclientprotocol/sdk':
-        specifier: ^0.16.1
-        version: 0.16.1(zod@4.3.6)
+        specifier: latest
+        version: 0.18.2(zod@4.3.6)
       '@artusx/core':
         specifier: latest
         version: 1.1.5-20(chokidar@3.6.0)(reflect-metadata@0.1.14)
       '@artusx/utils':
         specifier: latest
         version: 1.1.5-20(reflect-metadata@0.1.14)
+      '@grammyjs/stream':
+        specifier: ^1.0.1
+        version: 1.0.1(grammy@1.41.1)
       grammy:
         specifier: ^1.41.1
         version: 1.41.1
@@ -172,6 +175,11 @@ packages:
 
   '@agentclientprotocol/sdk@0.18.0':
     resolution: {integrity: sha512-JQGEi3EetQ38DLPpYxxnnz1fyo1/3qQEkKfUmj4JfiOJCEtjGWQ0nl54IH4LZceO7zIOrtUUxc+2cJRQbBOChA==}
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+
+  '@agentclientprotocol/sdk@0.18.2':
+    resolution: {integrity: sha512-l/o9NKvUc00GPa6RFJ4AccQq2O/PAf83xQ75mThHuL3H571iN4+PEdwnTBez67sS8Nv2aSA373xCZ5CbTXEwzA==}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
@@ -849,6 +857,12 @@ packages:
   '@eslint/js@8.56.0':
     resolution: {integrity: sha512-gMsVel9D7f2HLkBma9VbtzZRehRogVRfbr++f06nL2vnCGCNlzOD+/MUov/F4p8myyAHspEhVobgjpX64q5m6A==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@grammyjs/stream@1.0.1':
+    resolution: {integrity: sha512-L1hKvKdI1odWa2mRzfcEP8TdZPjgzHaATE2t2SFpSyikXCViVIEzKjZcM6tDRZFce4uzqckkN5tRM8WPW/1BUg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      grammy: ^1.39.0
 
   '@grammyjs/types@3.25.0':
     resolution: {integrity: sha512-iN9i5p+8ZOu9OMxWNcguojQfz4K/PDyMPOnL7PPCON+SoA/F8OKMH3uR7CVUkYfdNe0GCz8QOzAWrnqusQYFOg==}
@@ -4229,6 +4243,10 @@ snapshots:
     dependencies:
       zod: 4.3.6
 
+  '@agentclientprotocol/sdk@0.18.2(zod@4.3.6)':
+    dependencies:
+      zod: 4.3.6
+
   '@anthropic-ai/claude-agent-sdk@0.2.91(zod@4.3.6)':
     dependencies:
       '@anthropic-ai/sdk': 0.80.0(zod@4.3.6)
@@ -4899,6 +4917,11 @@ snapshots:
       - supports-color
 
   '@eslint/js@8.56.0': {}
+
+  '@grammyjs/stream@1.0.1(grammy@1.41.1)':
+    dependencies:
+      abort-controller: 3.0.0
+      grammy: 1.41.1
 
   '@grammyjs/types@3.25.0': {}
 
