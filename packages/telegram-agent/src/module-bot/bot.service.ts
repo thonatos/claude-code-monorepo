@@ -3,7 +3,8 @@ import type { Context } from "grammy";
 import { InputFile } from "grammy";
 import type TelegramClient from "../plugins/telegram/client";
 import { InjectEnum as TelegramInjectEnum } from "../plugins/telegram/constants";
-import type { SendMessageOptions } from "../types";
+import type { ReactionPhase, SendMessageOptions } from "../types";
+import { ReactionService } from "./reaction.service";
 
 @Injectable({
   scope: ScopeEnum.TRANSIENT,
@@ -11,6 +12,9 @@ import type { SendMessageOptions } from "../types";
 export class BotService {
   @Inject(TelegramInjectEnum.Client)
   private telegramClient!: TelegramClient;
+
+  @Inject(ReactionService)
+  private reactionService!: ReactionService;
 
   async sendMessage(userId: string, text: string, options?: SendMessageOptions): Promise<number> {
     const bot = this.telegramClient.getBot();
@@ -44,14 +48,16 @@ export class BotService {
     });
   }
 
-  async sendReaction(userId: string, messageId: number): Promise<void> {
-    const bot = this.telegramClient.getBot();
-    await bot.api.setMessageReaction(userId, messageId, [{ type: "emoji", emoji: "👍" }]);
+  async sendReaction(
+    userId: string,
+    messageId: number,
+    phase: ReactionPhase = "thought"
+  ): Promise<void> {
+    await this.reactionService.sendReaction(userId, messageId, phase);
   }
 
   async removeReaction(userId: string, messageId: number): Promise<void> {
-    const bot = this.telegramClient.getBot();
-    await bot.api.setMessageReaction(userId, messageId, []);
+    await this.reactionService.clearReaction(userId, messageId);
   }
 
   async sendTyping(userId: string): Promise<void> {

@@ -84,3 +84,5 @@ export interface UserSession {
   sessionId: string;
   lastActivity: Date;
 }
+
+export type ReactionPhase = "thought" | "tool" | "done";
