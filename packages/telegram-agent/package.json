@@ -26,6 +26,7 @@
     "@agentclientprotocol/sdk": "latest",
     "@artusx/core": "latest",
     "@artusx/utils": "latest",
+    "@grammyjs/auto-retry": "^2.0.2",
     "@grammyjs/stream": "^1.0.1",
     "grammy": "^1.41.1",
     "reflect-metadata": "^0.1.13",

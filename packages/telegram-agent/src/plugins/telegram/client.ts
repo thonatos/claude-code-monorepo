@@ -1,5 +1,6 @@
 import { Injectable, ScopeEnum } from '@artusx/core';
 import { Bot } from 'grammy';
+import { autoRetry } from '@grammyjs/auto-retry';
 import { InjectEnum } from './constants';
 import { SocksProxyAgent } from "socks-proxy-agent";
 
@@ -23,6 +24,9 @@ export default class TelegramClient {
         },
       }
     });
+
+    // Auto-retry on API failures (rate limits, network issues)
+    this.bot.api.config.use(autoRetry());
 
     this.bot.catch((err) => {
       console.log?.(`[grammy] Error: ${err.message}`);
