@@ -56,7 +56,9 @@ async closeUserSession(userId: string): Promise<void>
 
 ## 2. User Authentication
 
-### Configuration Extension
+### Existing Configuration
+
+`config.yaml` already has `allowedUsers`:
 
 ```yaml
 # ~/.telegram-agent/config.yaml
@@ -66,22 +68,22 @@ telegram:
 agent:
   preset: claude
 
-# New auth section
-auth:
-  allowedUsers:
-    - "123456"
-    - "789012"
-  open: false              # true = allow all users
+# Existing auth config
+allowedUsers:
+  - "123456"
+  - "789012"
 ```
+
+Config is loaded in `config.default.ts` line 61: `allowedUsers: fileConfig.allowedUsers ?? []`
 
 ### Auth Flow
 
 ```
-User message → Check auth.open / auth.allowedUsers
+User message → Check userId ∈ allowedUsers
               ↓
-         open=true → Allow
+         allowedUsers=[] (empty) → Allow all (open mode)
               ↓
-         open=false → Check userId ∈ allowedUsers
+         allowedUsers has values → Check userId in list
               ↓
          Auth pass → Create/reuse session
          Auth fail → Reject with "未授权用户"
@@ -109,16 +111,20 @@ async handle(ctx: Context): Promise<void> {
 
 File: `src/module-auth/auth.service.ts`
 
+Uses existing `allowedUsers` from AppConfig:
+
 ```typescript
 @Injectable()
 export class AuthService {
-  private allowedUsers: Set<string>;
-  private open: boolean;
+  @Inject(ArtusInjectEnum.Config)
+  private config!: AppConfig;
 
   isAuthorized(userId: string | undefined): boolean {
-    if (this.open) return true;
+    const allowedUsers = this.config.allowedUsers ?? [];
+    // Empty list = open mode (allow all)
+    if (allowedUsers.length === 0) return true;
     if (!userId) return false;
-    return this.allowedUsers.has(userId);
+    return allowedUsers.includes(userId);
   }
 }
 ```
@@ -215,9 +221,8 @@ spawn(config: AgentConfig): ChildProcess {
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/types.ts` | Modify | Add `UserSession`, `AuthConfig` types |
-| `src/config/config.default.ts` | Modify | Add auth config loading |
-| `src/module-auth/auth.service.ts` | Create | User authentication service |
+| `src/types.ts` | Modify | Add `UserSession` type |
+| `src/module-auth/auth.service.ts` | Create | User authentication service (uses existing allowedUsers config) |
 | `src/module-bridge/agent-process-manager.ts` | Create | Process lifecycle manager |
 | `src/module-bridge/bridge.service.ts` | Modify | Add sessions Map, inject Auth + ProcessManager |
 | `src/module-bot/message.handler.ts` | Modify | Add auth check before processing |
