@@ -1,4 +1,5 @@
-import { Inject, Injectable, ScopeEnum } from "@artusx/core";
+import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from "@artusx/core";
+import type { ArtusApplication } from "@artusx/core";
 import type { Context } from "grammy";
 import { InputFile } from "grammy";
 import type TelegramClient from "../plugins/telegram/client";
@@ -11,11 +12,18 @@ import { ReactionService } from "./reaction.service";
   scope: ScopeEnum.SINGLETON,
 })
 export class BotService {
+  @Inject(ArtusInjectEnum.Application)
+  private app!: ArtusApplication;
+
   @Inject(TelegramInjectEnum.Client)
   private telegramClient!: TelegramClient;
 
   @Inject(ReactionService)
   private reactionService!: ReactionService;
+
+  private get logger() {
+    return this.app.logger;
+  }
 
   private readonly COMMANDS = [
     { command: "start", description: "Create or restore session" },
@@ -101,7 +109,7 @@ export class BotService {
 
     // Set command menu
     bot.api.setMyCommands(this.COMMANDS, { scope: { type: "all_private_chats" } }).catch((err) => {
-      console.warn(`[bot] Failed to set commands: ${err.message}`);
+      this.logger.warn(`[bot] Failed to set commands: ${err.message}`);
     });
   }
 }

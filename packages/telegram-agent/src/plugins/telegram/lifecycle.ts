@@ -10,26 +10,30 @@ export default class TelegramPLifecycle implements ApplicationLifecycle {
   @Inject(InjectEnum.Client)
   private client!: TelegramClient;
 
+  private get logger() {
+    return this.app.logger;
+  }
+
   @LifecycleHook()
   async willReady() {
     const config = this.app?.config || {};
     const proxy = config?.proxy || '';
     const botToken = config?.telegram?.botToken;
-    
+
     if (!botToken) {
-      console.warn('[telegram-plugin] Bot token not configured, skipping initialization');
+      this.logger.warn('[telegram-plugin] Bot token not configured, skipping initialization');
       return;
     }
 
     await this.client.init(botToken, proxy);
     await this.client.start();
 
-    console.log('[telegram-plugin] Bot started successfully');
+    this.logger.info('[telegram-plugin] Bot started successfully');
   }
 
   @LifecycleHook()
   async beforeClose() {
     await this.client.stop();
-    console.log('[telegram-plugin] Bot stopped');
+    this.logger.info('[telegram-plugin] Bot stopped');
   }
 }

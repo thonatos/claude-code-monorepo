@@ -1,4 +1,4 @@
-import { Injectable, ScopeEnum } from '@artusx/core';
+import { ArtusInjectEnum, Injectable, ScopeEnum, Inject } from '@artusx/core';
 import { Bot } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import { InjectEnum } from './constants';
@@ -9,7 +9,14 @@ import { SocksProxyAgent } from "socks-proxy-agent";
   scope: ScopeEnum.SINGLETON,
 })
 export default class TelegramClient {
+  @Inject(ArtusInjectEnum.Application)
+  private app!: any;
+
   private bot!: Bot;
+
+  private get logger() {
+    return this.app.logger;
+  }
 
   async init(token: string, proxy?: string) {
     if (!token) {
@@ -29,15 +36,15 @@ export default class TelegramClient {
     this.bot.api.config.use(autoRetry());
 
     this.bot.catch((err) => {
-      console.log?.(`[grammy] Error: ${err.message}`);
+      this.logger.error(`[grammy] Error: ${err.message}`);
     });
   }
 
   async start() {
     try {
-      this.bot.start();      
+      this.bot.start();
     } catch (error) {
-      console.error('[telegram-plugin] Failed to start bot, retrying...', error);
+      this.logger.error('[telegram-plugin] Failed to start bot, retrying...', error);
     }
   }
 
