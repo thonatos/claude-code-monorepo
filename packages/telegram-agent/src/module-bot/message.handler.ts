@@ -1,7 +1,7 @@
 import { Inject, Injectable, ScopeEnum } from "@artusx/core";
 import type { Context } from "grammy";
-import { AuthService } from "../module-auth/auth.service";
 import { BridgeService } from "../module-bridge/bridge.service";
+import { AuthService } from "./auth.service";
 import { BotService } from "./bot.service";
 
 @Injectable({

@@ -2,7 +2,7 @@ import { Readable, Writable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import type { ArtusApplication } from "@artusx/core";
 import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
-import { AuthService } from "../module-auth/auth.service";
+import { AuthService } from "../module-bot/auth.service";
 import { BotService } from "../module-bot/bot.service";
 import { MediaHandler } from "../module-bot/media.handler";
 import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
