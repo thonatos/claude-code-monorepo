@@ -8,6 +8,7 @@ import { ReactionService } from "../module-bot/reaction.service";
 import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
 import type { AppConfig, UserSession, WebhookRequest } from "../types";
 import { AgentProcessService } from "./agent-process.service";
+import { SessionService } from "./session.service";
 
 @Injectable()
 export class BridgeService {
@@ -32,9 +33,13 @@ export class BridgeService {
   @Inject(AgentProcessService)
   processManager!: AgentProcessService;
 
+  @Inject(SessionService)
+  sessionService!: SessionService;
+
   // Session management
   private sessions: Map<string, UserSession> = new Map();
   private connections: Map<string, acp.ClientSideConnection> = new Map();
+  private currentSessionIds: Map<string, string> = new Map();
   private readonly MAX_CONCURRENT_USERS: number;
 
   constructor() {
@@ -61,13 +66,37 @@ export class BridgeService {
       throw new Error(`Maximum concurrent users (${maxUsers}) reached`);
     }
 
-    // Create new session
+    // Try to restore from storage
+    const stored = await this.sessionService.loadRestorable(userId);
+    let sessionId: string;
+    let createdAt: number;
+
+    if (stored) {
+      this.logger.info(`[bridge] Restoring session ${stored.sessionId} for user ${userId}`);
+      sessionId = stored.sessionId;
+      createdAt = stored.createdAt;
+      await this.sessionService.updateStatus(userId, sessionId, "active");
+    } else {
+      sessionId = `${userId}-${Date.now()}`;
+      createdAt = Date.now();
+      await this.sessionService.save({
+        userId,
+        sessionId,
+        createdAt,
+        lastActivity: createdAt,
+        status: "active",
+        messages: [],
+      });
+      this.logger.info(`[bridge] Created new session ${sessionId} for user ${userId}`);
+    }
+
+    // Create user session
     const session: UserSession = {
-      sessionId: `${userId}-${Date.now()}`,
-      lastActivity: new Date(),
+      sessionId,
+      lastActivity: new Date(createdAt),
     };
     this.sessions.set(userId, session);
-    this.logger.info(`[bridge] Created session for user ${userId}`);
+    this.currentSessionIds.set(userId, sessionId);
     return session;
   }
 
@@ -76,6 +105,13 @@ export class BridgeService {
    */
   getUserSession(userId: string): UserSession | undefined {
     return this.sessions.get(userId);
+  }
+
+  /**
+   * Get current session ID for user
+   */
+  getUserSessionId(userId: string): string | undefined {
+    return this.currentSessionIds.get(userId);
   }
 
   /**
@@ -90,11 +126,17 @@ export class BridgeService {
    * Close user session and cleanup resources
    */
   async closeUserSession(userId: string): Promise<void> {
+    const sessionId = this.currentSessionIds.get(userId);
+    if (sessionId) {
+      await this.sessionService.updateStatus(userId, sessionId, "inactive");
+    }
+
     const connection = this.connections.get(userId);
     if (connection) {
       this.connections.delete(userId);
     }
     this.sessions.delete(userId);
+    this.currentSessionIds.delete(userId);
     this.logger.info(`[bridge] Closed session for user ${userId}`);
   }
 
@@ -194,12 +236,24 @@ export class BridgeService {
     // Reset message state
     this.acpClient.reset();
 
+    let promptContent: string;
+
     if (message.photo) {
       const filePath = await this.mediaHandler.downloadPhoto(userId, message.photo);
-      await this.sendPrompt(`User sent image: ${filePath}`);
+      promptContent = `User sent image: ${filePath}`;
+      await this.sendPrompt(promptContent);
     } else if (message.text) {
       await this.botService.sendReaction(userId, message.message_id);
-      await this.sendPrompt(message.text);
+      promptContent = message.text;
+      await this.sendPrompt(promptContent);
+    } else {
+      return;
+    }
+
+    // Record user message
+    const sessionId = this.currentSessionIds.get(userId);
+    if (sessionId) {
+      await this.sessionService.recordMessage(userId, sessionId, "user", promptContent);
     }
   }
 
@@ -241,6 +295,11 @@ export class BridgeService {
   async close(): Promise<void> {
     this.logger.info("[bridge] Closing all connections...");
 
+    // Update all session statuses to inactive
+    for (const [userId, sessionId] of this.currentSessionIds) {
+      await this.sessionService.updateStatus(userId, sessionId, "inactive");
+    }
+
     // Close all user sessions
     for (const userId of this.sessions.keys()) {
       await this.closeUserSession(userId);
@@ -251,7 +310,9 @@ export class BridgeService {
 
     this.sessions.clear();
     this.connections.clear();
+    this.currentSessionIds.clear();
     this.acpClient.reset();
+    this.sessionService.stop();
 
     this.logger.info("[bridge] All connections closed");
   }
