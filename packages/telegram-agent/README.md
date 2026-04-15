@@ -117,6 +117,45 @@ agent: {
 }
 ```
 
+## Session Persistence
+
+Sessions and message history are persisted to `~/.telegram-agent/sessions/<userId>/<sessionId>.json`.
+
+### Benefits
+
+- Session state survives application restarts
+- Message history preserved (up to 100 messages, 7 days)
+- Commands `/restart` and `/clear` manage stored history
+
+### Storage Format
+
+```json
+{
+  "userId": "123456",
+  "sessionId": "123456-1700000000000",
+  "createdAt": 1700000000000,
+  "lastActivity": 1700000001000,
+  "status": "active",
+  "messages": [
+    { "role": "user", "content": "Hello", "timestamp": 1700000000000 },
+    { "role": "agent", "content": "Hi there!", "timestamp": 1700000000500 }
+  ]
+}
+```
+
+### History Limits
+
+- `maxMessages`: 100 (configurable)
+- `maxDays`: 7 (configurable)
+
+Configure in `~/.telegram-agent/config.yaml`:
+
+```yaml
+history:
+  maxMessages: 100
+  maxDays: 7
+```
+
 ## Webhook API
 
 ### Endpoints
