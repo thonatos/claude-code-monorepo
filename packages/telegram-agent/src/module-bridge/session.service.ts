@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { Injectable, Inject, ArtusInjectEnum } from "@artusx/core";
 import type { ArtusApplication } from "@artusx/core";
-import { defaultSessionsDir, DEFAULT_HISTORY_CONFIG } from "../constants";
-import type { StoredSession, StoredMessage, SessionStatus } from "../types";
+import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
+import { DEFAULT_HISTORY_CONFIG, defaultSessionsDir } from "../constants";
+import type { SessionStatus, StoredMessage, StoredSession } from "../types";
 
 @Injectable()
 export class SessionService {
@@ -41,7 +41,7 @@ export class SessionService {
   async save(session: StoredSession): Promise<void> {
     await this.ensureUserDir(session.userId);
     const filePath = this.getFilePath(session.userId, session.sessionId);
-    const tempPath = filePath + ".tmp";
+    const tempPath = `${filePath}.tmp`;
     await fs.writeFile(tempPath, JSON.stringify(session, null, 2), "utf-8");
     await fs.rename(tempPath, filePath);
     this.logger.info(`[session] Saved session ${session.sessionId} for user ${session.userId}`);

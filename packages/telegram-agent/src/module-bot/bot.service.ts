@@ -1,11 +1,11 @@
-import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from "@artusx/core";
 import type { ArtusApplication } from "@artusx/core";
+import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from "@artusx/core";
 import type { Context } from "grammy";
 import { InputFile } from "grammy";
 import type TelegramClient from "../plugins/telegram/client";
 import { InjectEnum as TelegramInjectEnum } from "../plugins/telegram/constants";
 import type { ReactionPhase, SendMessageOptions } from "../types";
-import { CommandHandler } from "./command.handler";
+import type { CommandHandler } from "./command.handler";
 import { ReactionService } from "./reaction.service";
 
 @Injectable({

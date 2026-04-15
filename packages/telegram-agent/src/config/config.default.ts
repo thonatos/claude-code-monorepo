@@ -3,9 +3,9 @@ import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import {
   DEFAULT_AGENT_CONFIG,
+  DEFAULT_HISTORY_CONFIG,
   DEFAULT_SESSION_CONFIG,
   DEFAULT_WEBHOOK_CONFIG,
-  DEFAULT_HISTORY_CONFIG,
   defaultMediaDir,
   defaultStorageDir,
   resolvePreset,

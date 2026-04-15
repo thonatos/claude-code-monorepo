@@ -1,5 +1,5 @@
-import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from "@artusx/core";
 import type { ArtusApplication } from "@artusx/core";
+import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from "@artusx/core";
 import type { Context } from "grammy";
 import { BridgeService } from "../module-bridge/bridge.service";
 import { AuthService } from "./auth.service";
@@ -43,7 +43,13 @@ export class MessageHandler {
     const message = ctx.message;
     if (!message) return;
 
-    const messageType = message.text ? "text" : message.photo ? "photo" : message.voice ? "voice" : "other";
+    const messageType = message.text
+      ? "text"
+      : message.photo
+        ? "photo"
+        : message.voice
+          ? "voice"
+          : "other";
     this.logger.info(`[message] Type: ${messageType}, ID: ${message.message_id}`);
 
     await this.botService.sendReaction(userId, message.message_id);
