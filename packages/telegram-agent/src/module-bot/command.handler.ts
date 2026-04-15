@@ -2,6 +2,7 @@ import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from "@artusx/core";
 import type { ArtusApplication } from "@artusx/core";
 import type { Context } from "grammy";
 import { BridgeService } from "../module-bridge/bridge.service";
+import { SessionService } from "../module-bridge/session.service";
 import { BotService } from "./bot.service";
 
 @Injectable({
@@ -13,6 +14,9 @@ export class CommandHandler {
 
   @Inject(BridgeService)
   bridgeService!: BridgeService;
+
+  @Inject(SessionService)
+  sessionService!: SessionService;
 
   @Inject(ArtusInjectEnum.Application)
   private app!: ArtusApplication;
@@ -28,11 +32,16 @@ export class CommandHandler {
 
     this.logger.info(`[command] /start from ${username} (${userId})`);
 
+    // Check for stored session
+    const stored = await this.sessionService.loadRestorable(userId);
     const session = this.bridgeService.getUserSession(userId);
+
     if (session) {
+      const messageCount = stored?.messages.length ?? 0;
       await ctx.reply(
         `<b>Session restored</b>\n` +
-        `Session ID: <code>${session.sessionId}</code>`,
+        `Session ID: <code>${session.sessionId}</code>\n` +
+        `Messages: ${messageCount}`,
         { parse_mode: "HTML" }
       );
     } else {
@@ -51,7 +60,10 @@ export class CommandHandler {
     this.logger.info(`[command] /status from ${userId}`);
 
     const session = this.bridgeService.getUserSession(userId);
-    if (!session) {
+    const sessionId = this.bridgeService.getUserSessionId(userId);
+    const stored = sessionId ? await this.sessionService.load(userId, sessionId) : null;
+
+    if (!session || !sessionId) {
       await ctx.reply("<b>No active session</b>", { parse_mode: "HTML" });
       return;
     }
@@ -61,7 +73,10 @@ export class CommandHandler {
     await ctx.reply(
       `<b>Session Status</b>\n\n` +
       `<b>ID:</b> <code>${session.sessionId}</code>\n` +
-      `<b>Last Activity:</b> ${formatDate(session.lastActivity.getTime())}`,
+      `<b>Created:</b> ${stored ? formatDate(stored.createdAt) : 'N/A'}\n` +
+      `<b>Last Activity:</b> ${formatDate(session.lastActivity.getTime())}\n` +
+      `<b>Messages:</b> ${stored?.messages.length ?? 0}\n` +
+      `<b>Status:</b> ${stored?.status ?? 'N/A'}`,
       { parse_mode: "HTML" }
     );
   }
@@ -73,6 +88,12 @@ export class CommandHandler {
     this.logger.info(`[command] /restart from ${userId}`);
 
     await ctx.reply("<b>Restarting session...</b>", { parse_mode: "HTML" });
+
+    // Mark current session as terminated
+    const sessionId = this.bridgeService.getUserSessionId(userId);
+    if (sessionId) {
+      await this.sessionService.updateStatus(userId, sessionId, "terminated");
+    }
 
     await this.bridgeService.closeUserSession(userId);
     this.bridgeService.resetReactionState(userId);
@@ -90,8 +111,13 @@ export class CommandHandler {
 
     this.logger.info(`[command] /clear from ${userId}`);
 
+    const sessionId = this.bridgeService.getUserSessionId(userId);
+    if (sessionId) {
+      await this.sessionService.clearHistory(userId, sessionId);
+    }
+
     this.bridgeService.resetReactionState(userId);
-    await ctx.reply("<b>State cleared</b>", { parse_mode: "HTML" });
+    await ctx.reply("<b>History cleared</b>", { parse_mode: "HTML" });
   }
 
   async handleHelp(ctx: Context): Promise<void> {
