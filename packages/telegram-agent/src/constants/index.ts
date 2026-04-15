@@ -41,12 +41,27 @@ export function defaultMediaDir(): string {
 }
 
 /**
+ * Default sessions directory
+ */
+export function defaultSessionsDir(): string {
+  return path.join(defaultStorageDir(), "sessions");
+}
+
+/**
  * Default session config
  */
 export const DEFAULT_SESSION_CONFIG = {
   idleTimeoutMs: 24 * 60 * 60 * 1000, // 24 hours
   maxConcurrentUsers: 10,
   autoRecover: true,
+};
+
+/**
+ * Default history config
+ */
+export const DEFAULT_HISTORY_CONFIG = {
+  maxMessages: 100,
+  maxDays: 7,
 };
 
 /**
