@@ -171,6 +171,13 @@ export class BridgeService {
         }
       },
       showThoughts: agentConfig.showThoughts,
+      onMessageFlush: async (text: string) => {
+        // Record agent message
+        const sessionId = this.currentSessionIds.get(userId);
+        if (sessionId && text) {
+          await this.sessionService.recordMessage(userId, sessionId, "agent", text);
+        }
+      },
     });
 
     // Spawn agent process using ProcessManager

@@ -12,6 +12,7 @@ export interface ACPClientOpts {
   removeReaction?: (msgId: number) => Promise<void>;
   sendTyping?: () => Promise<void>;
   onThoughtFlush?: (text: string) => Promise<void>;
+  onMessageFlush?: (text: string) => Promise<void>;
   onMediaUpload?: (path: string, type: 'image' | 'audio') => Promise<void>;
   showThoughts?: boolean;
 }

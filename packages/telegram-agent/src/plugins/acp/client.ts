@@ -168,6 +168,12 @@ export class ACPClient implements acp.Client {
     const text = this.pendingText;
     this.chunks = [];
     this.pendingText = '';
+
+    // Call onMessageFlush callback if provided
+    if (this.opts.onMessageFlush && text) {
+      await this.opts.onMessageFlush(text);
+    }
+
     return text;
   }
 
