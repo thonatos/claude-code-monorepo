@@ -20,6 +20,10 @@ export interface TelegramAgentConfig {
     maxConcurrentUsers: number;
     autoRecover: boolean;
   };
+  history: {
+    maxMessages: number;
+    maxDays: number;
+  };
   webhook?: {
     token: string;
     enableAuth: boolean;
@@ -38,6 +42,7 @@ export interface AppConfig {
   telegram: TelegramAgentConfig['telegram'];
   agent: TelegramAgentConfig['agent'];
   session: TelegramAgentConfig['session'];
+  history: TelegramAgentConfig['history'];
   webhook?: TelegramAgentConfig['webhook'];
   media?: TelegramAgentConfig['media'];
   allowedUsers?: TelegramAgentConfig['allowedUsers'];

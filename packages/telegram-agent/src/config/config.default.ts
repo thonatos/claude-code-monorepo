@@ -5,6 +5,7 @@ import {
   DEFAULT_AGENT_CONFIG,
   DEFAULT_SESSION_CONFIG,
   DEFAULT_WEBHOOK_CONFIG,
+  DEFAULT_HISTORY_CONFIG,
   defaultMediaDir,
   defaultStorageDir,
   resolvePreset,
@@ -47,6 +48,10 @@ export default () => {
       maxConcurrentUsers:
         fileConfig.session?.maxConcurrentUsers ?? DEFAULT_SESSION_CONFIG.maxConcurrentUsers,
       autoRecover: fileConfig.session?.autoRecover ?? DEFAULT_SESSION_CONFIG.autoRecover,
+    },
+    history: {
+      maxMessages: fileConfig.history?.maxMessages ?? DEFAULT_HISTORY_CONFIG.maxMessages,
+      maxDays: fileConfig.history?.maxDays ?? DEFAULT_HISTORY_CONFIG.maxDays,
     },
     webhook: {
       token:
