@@ -91,3 +91,21 @@ export interface ReactionState {
   currentPhase: ReactionPhase | null;
   lastUpdateAt: number;
 }
+
+// Storage types
+export type SessionStatus = 'active' | 'inactive' | 'terminated';
+
+export interface StoredMessage {
+  role: 'user' | 'agent';
+  content: string;
+  timestamp: number;
+}
+
+export interface StoredSession {
+  userId: string;
+  sessionId: string;
+  createdAt: number;
+  lastActivity: number;
+  status: SessionStatus;
+  messages: StoredMessage[];
+}
