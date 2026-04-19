@@ -16,6 +16,7 @@ bun.lock
 # Environment files
 .env
 .env.*
+!.env.example
 *.local
 
 # User runtime config (contains bot tokens)
