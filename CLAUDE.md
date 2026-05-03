@@ -34,12 +34,13 @@ Use `pnpm` exclusively. NEVER use `npm` or `yarn`.
 
 ### 5. Code Quality
 
-Use Biome for linting and formatting. Run before commits:
+Use oxlint and oxfmt for linting and formatting. Run before commits:
 
 ```bash
 pnpm run lint        # Check code quality
-pnpm run lint:fix    # Auto-fix issues
-pnpm run format      # Format code
+pnpm run lint:fix    # Auto-fix linting issues
+pnpm run format      # Check formatting
+pnpm run format:fix  # Format code
 ```
 
 ## References

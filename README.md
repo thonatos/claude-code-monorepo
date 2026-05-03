@@ -20,8 +20,9 @@ pnpm install
 
 # Code quality
 pnpm run lint           # Check all packages
-pnpm run lint:fix       # Auto-fix issues
-pnpm run format         # Format code
+pnpm run lint:fix       # Auto-fix linting issues
+pnpm run format         # Check formatting
+pnpm run format:fix     # Format code
 
 # Build specific package
 pnpm --filter <package> run build
@@ -38,7 +39,7 @@ Installed skills for extended capabilities. See [Skills Reference](docs/referenc
 
 - Secrets loaded from external config files (excluded via .gitignore)
 - Pre-commit hooks: Gitleaks + Commitlint
-- Biome for linting and formatting
+- oxlint/oxfmt for linting and formatting
 
 ## License
 
