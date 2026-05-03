@@ -2,15 +2,15 @@
  * TelegramAcpBridge — orchestration layer.
  */
 
-import path from "node:path";
-import fs from "node:fs";
-import { createBot, startBot, stopBot, type Bot } from "./bot/index.ts";
-import { SessionManager } from "./session/index.ts";
-import { TelegramApiWrapper } from "./telegram-api.ts";
-import type { TelegramAcpConfig } from "./config.ts";
-import { defaultStorageDir } from "./config.ts";
-import { MediaDownloader, MediaUploader, TempFileManager } from "./media/index.ts";
-import type { ReactionPhase } from "./reaction/types.ts";
+import path from 'node:path';
+import fs from 'node:fs';
+import { createBot, startBot, stopBot, type Bot } from './bot/index.ts';
+import { SessionManager } from './session/index.ts';
+import { TelegramApiWrapper } from './telegram-api.ts';
+import type { TelegramAcpConfig } from './config.ts';
+import { defaultStorageDir } from './config.ts';
+import { MediaDownloader, MediaUploader, TempFileManager } from './media/index.ts';
+import type { ReactionPhase } from './reaction/types.ts';
 
 export class TelegramAcpBridge {
   private config: TelegramAcpConfig;
@@ -30,7 +30,7 @@ export class TelegramAcpBridge {
   }
 
   async start(): Promise<void> {
-    this.log("[telegram-acp] Starting...");
+    this.log('[telegram-acp] Starting...');
 
     // Get logging config
     const logLevel = this.config.observability?.logging?.level || 'info';
@@ -96,14 +96,14 @@ export class TelegramAcpBridge {
     // Start bot
     await startBot(this.bot);
 
-    this.log("[telegram-acp] Started");
+    this.log('[telegram-acp] Started');
   }
 
   async stop(): Promise<void> {
     if (this.stopping) return;
     this.stopping = true;
 
-    this.log("[telegram-acp] Stopping...");
+    this.log('[telegram-acp] Stopping...');
 
     if (this.sessionManager) {
       await this.sessionManager.stop();
@@ -113,17 +113,17 @@ export class TelegramAcpBridge {
       await stopBot(this.bot);
     }
 
-    this.log("[telegram-acp] Stopped");
+    this.log('[telegram-acp] Stopped');
   }
 
   async getBotInfo(): Promise<{ id: string; username: string; firstName?: string }> {
     if (!this.bot) {
-      throw new Error("Bot not started");
+      throw new Error('Bot not started');
     }
     const me = await this.bot.api.getMe();
     return {
       id: me.id.toString(),
-      username: me.username || "",
+      username: me.username || '',
       firstName: me.first_name || undefined,
     };
   }

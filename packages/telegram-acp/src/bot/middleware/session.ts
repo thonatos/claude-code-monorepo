@@ -2,8 +2,8 @@
  * Session middleware for Telegram bot.
  */
 
-import { Context } from "grammy";
-import type { SessionManager, UserSession } from "../../session/index.ts";
+import { Context } from 'grammy';
+import type { SessionManager, UserSession } from '../../session/index.ts';
 
 interface AcpContext extends Context {
   session: UserSession;

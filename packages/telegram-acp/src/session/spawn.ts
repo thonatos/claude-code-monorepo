@@ -2,11 +2,11 @@
  * Agent process spawning and ACP connection initialization.
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
-import { Writable, Readable } from "node:stream";
-import * as acp from "@agentclientprotocol/sdk";
-import { TelegramAcpClient } from "../client.ts";
-import packageJson from "../../package.json" with { type: "json" };
+import { spawn, type ChildProcess } from 'node:child_process';
+import { Writable, Readable } from 'node:stream';
+import * as acp from '@agentclientprotocol/sdk';
+import { TelegramAcpClient } from '../client.ts';
+import packageJson from '../../package.json' with { type: 'json' };
 
 export interface SpawnResult {
   process: ChildProcess;
@@ -25,28 +25,24 @@ export interface SpawnOpts {
 /**
  * Spawn agent process and initialize ACP connection.
  */
-export async function spawnAgent(
-  userId: string,
-  client: TelegramAcpClient,
-  opts: SpawnOpts
-): Promise<SpawnResult> {
+export async function spawnAgent(userId: string, client: TelegramAcpClient, opts: SpawnOpts): Promise<SpawnResult> {
   const { agentCommand, agentArgs, agentCwd, agentEnv, log } = opts;
-  const cmdLine = [agentCommand, ...agentArgs].join(" ");
+  const cmdLine = [agentCommand, ...agentArgs].join(' ');
   log(`[agent] Spawning for ${userId}: ${cmdLine}`);
 
-  const useShell = process.platform === "win32";
+  const useShell = process.platform === 'win32';
   const proc = spawn(agentCommand, agentArgs, {
-    stdio: ["pipe", "pipe", "inherit"],
+    stdio: ['pipe', 'pipe', 'inherit'],
     cwd: agentCwd,
     env: { ...process.env, ...agentEnv },
     shell: useShell,
   });
 
-  proc.on("error", (err) => log(`[agent] Process error: ${String(err)}`));
+  proc.on('error', (err) => log(`[agent] Process error: ${String(err)}`));
 
   if (!proc.stdin || !proc.stdout) {
     proc.kill();
-    throw new Error("Failed to get agent process stdio");
+    throw new Error('Failed to get agent process stdio');
   }
 
   const input = Writable.toWeb(proc.stdin);
@@ -54,7 +50,7 @@ export async function spawnAgent(
   const stream = acp.ndJsonStream(input, output);
   const connection = new acp.ClientSideConnection(() => client, stream);
 
-  log("[acp] Initializing connection...");
+  log('[acp] Initializing connection...');
   const initResult = await connection.initialize({
     protocolVersion: acp.PROTOCOL_VERSION,
     clientInfo: {
@@ -68,7 +64,7 @@ export async function spawnAgent(
   });
   log(`[acp] Initialized v${initResult.protocolVersion}`);
 
-  log("[acp] Creating session...");
+  log('[acp] Creating session...');
   const sessionResult = await connection.newSession({
     cwd: agentCwd,
     mcpServers: [],

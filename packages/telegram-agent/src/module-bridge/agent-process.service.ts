@@ -1,6 +1,6 @@
-import { type ChildProcess, spawn } from "node:child_process";
-import { Injectable } from "@artusx/core";
-import type { TelegramAgentConfig } from "../types";
+import { type ChildProcess, spawn } from 'node:child_process';
+import { Injectable } from '@artusx/core';
+import type { TelegramAgentConfig } from '../types';
 
 @Injectable()
 export class AgentProcessService {
@@ -19,32 +19,32 @@ export class AgentProcessService {
   }
 
   spawn(
-    config: TelegramAgentConfig["agent"],
+    config: TelegramAgentConfig['agent'],
     logger?: {
       info: (msg: string) => void;
       warn: (msg: string) => void;
       error: (msg: string) => void;
-    }
+    },
   ): ChildProcess {
     this.process = spawn(config.command, config.args, {
       cwd: config.cwd || process.cwd(),
       env: { ...process.env, ...config.env },
-      stdio: ["pipe", "pipe", "inherit"],
+      stdio: ['pipe', 'pipe', 'inherit'],
     });
 
-    this.process.on("spawn", () => {
-      logger?.info("[process] Agent spawned");
+    this.process.on('spawn', () => {
+      logger?.info('[process] Agent spawned');
     });
 
-    this.process.on("exit", (code, signal) => {
+    this.process.on('exit', (code, signal) => {
       logger?.info(`[process] Agent exited (code: ${code}, signal: ${signal})`);
       for (const cb of this.exitCallbacks) {
-        cb(code ?? 0, signal ?? "unknown");
+        cb(code ?? 0, signal ?? 'unknown');
       }
       this.process = null;
     });
 
-    this.process.on("error", (err) => {
+    this.process.on('error', (err) => {
       logger?.error(`[process] Agent error: ${err.message}`);
       for (const cb of this.errorCallbacks) {
         cb(err);
@@ -57,18 +57,18 @@ export class AgentProcessService {
   async gracefulShutdown(logger?: { warn: (msg: string) => void }): Promise<void> {
     if (!this.process || this.process.killed) return;
 
-    this.process.kill("SIGTERM");
+    this.process.kill('SIGTERM');
 
     await new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
         if (this.process && !this.process.killed) {
-          logger?.warn("[process] Force killing with SIGKILL");
-          this.process.kill("SIGKILL");
+          logger?.warn('[process] Force killing with SIGKILL');
+          this.process.kill('SIGKILL');
         }
         resolve();
       }, this.SHUTDOWN_TIMEOUT_MS);
 
-      this.process?.once("exit", () => {
+      this.process?.once('exit', () => {
         clearTimeout(timer);
         resolve();
       });
@@ -79,7 +79,7 @@ export class AgentProcessService {
 
   kill(): void {
     if (this.process && !this.process.killed) {
-      this.process.kill("SIGKILL");
+      this.process.kill('SIGKILL');
       this.process = null;
     }
   }

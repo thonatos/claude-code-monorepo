@@ -1,5 +1,5 @@
-import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
-import type { AppConfig } from "../types";
+import { ArtusInjectEnum, Inject, Injectable } from '@artusx/core';
+import type { AppConfig } from '../types';
 
 @Injectable()
 export class AuthService {

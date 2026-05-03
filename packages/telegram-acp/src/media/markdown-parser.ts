@@ -49,7 +49,7 @@ export class MarkdownMediaParser {
       const trimmedLine = line.trim();
 
       // Check if line starts with / or ~ and ends with media extension
-      if (/^[\/~].+\.(?:jpg|jpeg|png|gif|webp|mp3|ogg|m4a|wav)$/i.test(trimmedLine)) {
+      if (/^[/~].+\.(?:jpg|jpeg|png|gif|webp|mp3|ogg|m4a|wav)$/i.test(trimmedLine)) {
         const rawPath = trimmedLine;
 
         // Skip if already seen

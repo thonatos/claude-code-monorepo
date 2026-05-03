@@ -2,11 +2,14 @@
  * Telegram Bot API wrapper for dependency injection.
  */
 
-import { InputFile } from "grammy";
-import type { BotApi } from "./bot/index.ts";
+import { InputFile } from 'grammy';
+import type { BotApi } from './bot/index.ts';
 
 export class TelegramApiWrapper {
-  constructor(private api: BotApi, public readonly token: string) {}
+  constructor(
+    private api: BotApi,
+    public readonly token: string,
+  ) {}
 
   async getFile(fileId: string): Promise<{ file_path: string }> {
     const file = await this.api.getFile(fileId);
@@ -16,7 +19,7 @@ export class TelegramApiWrapper {
   async sendMessage(userId: string, text: string, parseMode?: 'HTML'): Promise<number> {
     try {
       const msg = await this.api.sendMessage(userId, text, {
-        parse_mode: parseMode
+        parse_mode: parseMode,
       });
       return msg.message_id;
     } catch (err) {
@@ -29,7 +32,7 @@ export class TelegramApiWrapper {
     if (!msgId || msgId <= 0) return 0;
     try {
       const result = await this.api.editMessageText(userId, msgId, text, {
-        parse_mode: parseMode
+        parse_mode: parseMode,
       });
       if (result === true) return msgId;
       return result.message_id;
@@ -40,7 +43,7 @@ export class TelegramApiWrapper {
   }
 
   async sendTyping(userId: string): Promise<void> {
-    await this.api.sendChatAction(userId, "typing");
+    await this.api.sendChatAction(userId, 'typing');
   }
 
   async sendReaction(userId: string, messageId: number, emoji: string): Promise<void> {

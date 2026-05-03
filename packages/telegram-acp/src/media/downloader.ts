@@ -10,7 +10,7 @@ import type { MediaInfo, MediaDownloadResult } from './types.ts';
 export class MediaDownloader {
   constructor(
     private api: TelegramApiWrapper,
-    private tempBaseDir: string = '/tmp/telegram-acp/media'
+    private tempBaseDir: string = '/tmp/telegram-acp/media',
   ) {}
 
   async downloadToTemp(userId: string, info: MediaInfo): Promise<MediaDownloadResult> {

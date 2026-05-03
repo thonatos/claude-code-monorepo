@@ -90,7 +90,7 @@ export interface UserSession {
   lastActivity: Date;
 }
 
-export type ReactionPhase = "thought" | "tool" | "done";
+export type ReactionPhase = 'thought' | 'tool' | 'done';
 
 export interface ReactionState {
   currentPhase: ReactionPhase | null;

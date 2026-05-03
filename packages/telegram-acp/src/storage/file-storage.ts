@@ -54,7 +54,7 @@ export class FileStorage implements StorageBackend {
     this.pendingWrites.set(key, pending);
 
     if (pending.messages.length >= this.config.maxPendingMessages) {
-      this.flushKey(key).catch(err => {
+      this.flushKey(key).catch((err) => {
         console.error(`[storage] Flush error for ${key}: ${String(err)}`);
       });
     }
@@ -69,7 +69,7 @@ export class FileStorage implements StorageBackend {
 
   private flushPending(): void {
     for (const key of this.pendingWrites.keys()) {
-      this.flushKey(key).catch(err => {
+      this.flushKey(key).catch((err) => {
         console.error(`[storage] Flush error for ${key}: ${String(err)}`);
       });
     }

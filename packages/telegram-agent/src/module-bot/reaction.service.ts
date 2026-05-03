@@ -2,11 +2,11 @@
  * Reaction service for managing Telegram message reactions.
  */
 
-import { Inject, Injectable, ScopeEnum } from "@artusx/core";
-import { DEFAULT_EMOJI_MAP, REACTION_DEBOUNCE_MS } from "../constants";
-import type TelegramClient from "../plugins/telegram/client";
-import { InjectEnum as TelegramInjectEnum } from "../plugins/telegram/constants";
-import type { ReactionPhase, ReactionState } from "../types";
+import { Inject, Injectable, ScopeEnum } from '@artusx/core';
+import { DEFAULT_EMOJI_MAP, REACTION_DEBOUNCE_MS } from '../constants';
+import type TelegramClient from '../plugins/telegram/client';
+import { InjectEnum as TelegramInjectEnum } from '../plugins/telegram/constants';
+import type { ReactionPhase, ReactionState } from '../types';
 
 @Injectable({
   scope: ScopeEnum.SINGLETON,
@@ -39,7 +39,7 @@ export class ReactionService {
     const emoji = DEFAULT_EMOJI_MAP[phase] as any;
     const bot = this.telegramClient.getBot();
 
-    await bot.api.setMessageReaction(userId, messageId, [{ type: "emoji", emoji }]);
+    await bot.api.setMessageReaction(userId, messageId, [{ type: 'emoji', emoji }]);
 
     state.currentPhase = phase;
     state.lastUpdateAt = now;

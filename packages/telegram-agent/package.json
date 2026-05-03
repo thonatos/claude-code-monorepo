@@ -3,15 +3,22 @@
   "version": "0.1.0",
   "description": "Telegram agent with webhook support and skills integration",
   "keywords": [
-    "artusx",
-    "telegram",
+    "acp",
     "agent",
-    "acp"
+    "artusx",
+    "telegram"
   ],
-  "main": "dist/index.ts",
+  "homepage": "https://github.com/thonatos/claude-code-monorepo",
+  "license": "MIT",
+  "author": "Suyi <thonatos.yang@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thonatos/claude-code-monorepo.git"
+  },
   "bin": {
     "telegram-agent": "./dist/index.js"
   },
+  "main": "dist/index.ts",
   "scripts": {
     "build": "npm run tsc",
     "dev": "ARTUS_SERVER_ENV=development npx nodemon src/index.ts",
@@ -44,12 +51,5 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  },
-  "license": "MIT",
-  "author": "Suyi <thonatos.yang@gmail.com>",
-  "homepage": "https://github.com/thonatos/claude-code-monorepo",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/thonatos/claude-code-monorepo.git"
   }
 }

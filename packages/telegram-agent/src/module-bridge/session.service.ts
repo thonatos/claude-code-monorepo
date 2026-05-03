@@ -1,9 +1,9 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import type { ArtusApplication } from "@artusx/core";
-import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
-import { DEFAULT_HISTORY_CONFIG, defaultSessionsDir } from "../constants";
-import type { SessionStatus, StoredMessage, StoredSession } from "../types";
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import type { ArtusApplication } from '@artusx/core';
+import { ArtusInjectEnum, Inject, Injectable } from '@artusx/core';
+import { DEFAULT_HISTORY_CONFIG, defaultSessionsDir } from '../constants';
+import type { SessionStatus, StoredMessage, StoredSession } from '../types';
 
 @Injectable()
 export class SessionService {
@@ -42,7 +42,7 @@ export class SessionService {
     await this.ensureUserDir(session.userId);
     const filePath = this.getFilePath(session.userId, session.sessionId);
     const tempPath = `${filePath}.tmp`;
-    await fs.writeFile(tempPath, JSON.stringify(session, null, 2), "utf-8");
+    await fs.writeFile(tempPath, JSON.stringify(session, null, 2), 'utf-8');
     await fs.rename(tempPath, filePath);
     this.logger.info(`[session] Saved session ${session.sessionId} for user ${session.userId}`);
   }
@@ -53,10 +53,10 @@ export class SessionService {
   async load(userId: string, sessionId: string): Promise<StoredSession | null> {
     const filePath = this.getFilePath(userId, sessionId);
     try {
-      const content = await fs.readFile(filePath, "utf-8");
+      const content = await fs.readFile(filePath, 'utf-8');
       return JSON.parse(content) as StoredSession;
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;
       }
       this.logger.error(`[session] Failed to load ${filePath}: ${String(err)}`);
@@ -74,10 +74,10 @@ export class SessionService {
       const candidates: StoredSession[] = [];
 
       for (const file of files) {
-        if (!file.endsWith(".json")) continue;
-        const sessionId = file.replace(".json", "");
+        if (!file.endsWith('.json')) continue;
+        const sessionId = file.replace('.json', '');
         const session = await this.load(userId, sessionId);
-        if (session && session.status !== "terminated") {
+        if (session && session.status !== 'terminated') {
           candidates.push(session);
         }
       }
@@ -85,7 +85,7 @@ export class SessionService {
       if (candidates.length === 0) return null;
       return candidates.sort((a, b) => b.lastActivity - a.lastActivity)[0];
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;
       }
       this.logger.error(`[session] Failed to list sessions for ${userId}: ${String(err)}`);
@@ -102,8 +102,8 @@ export class SessionService {
       const files = await fs.readdir(userDir);
       const sessions: StoredSession[] = [];
       for (const file of files) {
-        if (!file.endsWith(".json")) continue;
-        const sessionId = file.replace(".json", "");
+        if (!file.endsWith('.json')) continue;
+        const sessionId = file.replace('.json', '');
         const session = await this.load(userId, sessionId);
         if (session) {
           sessions.push(session);
@@ -111,7 +111,7 @@ export class SessionService {
       }
       return sessions.sort((a, b) => b.lastActivity - a.lastActivity);
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         return [];
       }
       this.logger.error(`[session] Failed to list sessions for ${userId}: ${String(err)}`);
@@ -122,12 +122,7 @@ export class SessionService {
   /**
    * Record message to session
    */
-  async recordMessage(
-    userId: string,
-    sessionId: string,
-    role: "user" | "agent",
-    content: string
-  ): Promise<void> {
+  async recordMessage(userId: string, sessionId: string, role: 'user' | 'agent', content: string): Promise<void> {
     const session = await this.load(userId, sessionId);
     if (!session) return;
 
@@ -188,6 +183,6 @@ export class SessionService {
    * Cleanup on shutdown
    */
   stop(): void {
-    this.logger.info("[session] SessionService stopped");
+    this.logger.info('[session] SessionService stopped');
   }
 }

@@ -1,11 +1,6 @@
-import { Inject, Injectable } from "@artusx/core";
-import { BridgeService } from "../module-bridge/bridge.service";
-import type {
-  EditMessageRequest,
-  SendMediaRequest,
-  SendMessageRequest,
-  SendReactionRequest,
-} from "../types";
+import { Inject, Injectable } from '@artusx/core';
+import { BridgeService } from '../module-bridge/bridge.service';
+import type { EditMessageRequest, SendMediaRequest, SendMessageRequest, SendReactionRequest } from '../types';
 
 @Injectable()
 export class WebhookService {
@@ -14,7 +9,7 @@ export class WebhookService {
 
   async sendMessage(request: SendMessageRequest): Promise<{ messageId: number }> {
     const messageId = await this.bridgeService.handleWebhookRequest({
-      action: "send-message",
+      action: 'send-message',
       userId: request.userId,
       data: {
         text: request.text,
@@ -26,7 +21,7 @@ export class WebhookService {
 
   async sendMedia(request: SendMediaRequest): Promise<{ messageId: number }> {
     const messageId = await this.bridgeService.handleWebhookRequest({
-      action: "send-media",
+      action: 'send-media',
       userId: request.userId,
       data: {
         filePath: request.filePath,
@@ -38,7 +33,7 @@ export class WebhookService {
 
   async editMessage(request: EditMessageRequest): Promise<{ messageId: number }> {
     const messageId = await this.bridgeService.handleWebhookRequest({
-      action: "edit-message",
+      action: 'edit-message',
       userId: request.userId,
       data: {
         messageId: request.messageId,
@@ -51,7 +46,7 @@ export class WebhookService {
 
   async sendReaction(request: SendReactionRequest): Promise<void> {
     await this.bridgeService.handleWebhookRequest({
-      action: "send-reaction",
+      action: 'send-reaction',
       userId: request.userId,
       data: {
         messageId: request.messageId,

@@ -61,11 +61,13 @@ packages/telegram-agent/
 ### Plugins
 
 **Telegram Plugin**
+
 - Provides `TelegramClient` (grammy wrapper)
 - Manages bot lifecycle
 - Injected into business modules
 
 **ACP Plugin**
+
 - `SessionManager` - Per-user sessions
 - `ProcessManager` - Agent process lifecycle
 - `HistoryManager` - Conversation history
@@ -74,17 +76,20 @@ packages/telegram-agent/
 ### Modules
 
 **Bot Module**
+
 - Message handling
 - Media upload/download
 - Reactions
 - Commands (/start, /status, /restart)
 
 **Webhook Module**
+
 - HTTP API endpoints
 - Bearer token authentication
 - Request validation
 
 **Bridge Module**
+
 - Message flow orchestration
 - User → Agent → Telegram routing
 - Webhook → Bot routing
@@ -163,6 +168,7 @@ history:
 Base URL: `http://localhost:7001/api/telegram`
 
 **Send Message**
+
 ```bash
 POST /send-message
 {
@@ -173,6 +179,7 @@ POST /send-message
 ```
 
 **Send Media**
+
 ```bash
 POST /send-media
 {
@@ -183,6 +190,7 @@ POST /send-media
 ```
 
 **Edit Message**
+
 ```bash
 POST /edit-message
 {
@@ -193,6 +201,7 @@ POST /edit-message
 ```
 
 **Send Reaction**
+
 ```bash
 POST /send-reaction
 {
@@ -215,6 +224,7 @@ curl -H "Authorization: Bearer your-token" ...
 See `skills/telegram-agent/SKILL.md` for complete skills documentation.
 
 Skills allow agents to:
+
 - Send messages proactively
 - Send media files
 - Edit messages
@@ -256,6 +266,7 @@ Key differences from `packages/telegram-acp`:
 - **Session**: ACP Plugin vs SessionManager class
 
 Migrated features:
+
 - ✅ ACP agent communication
 - ✅ Session management
 - ✅ Streaming messages
@@ -264,6 +275,7 @@ Migrated features:
 - ✅ Commands
 
 New features:
+
 - ✅ Webhook API
 - ✅ Skills integration
 - ✅ Plugin architecture

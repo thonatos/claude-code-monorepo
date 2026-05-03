@@ -11,7 +11,7 @@ export async function listDevices(): Promise<DeviceSummary[]> {
   }
 
   const devices = await cloud.getDevices();
-  return devices.map(d => ({
+  return devices.map((d) => ({
     did: d['did'] || '',
     name: d['name'] || '',
     model: d['model'] || '',
@@ -30,12 +30,12 @@ export async function findDeviceByName(name: string): Promise<DeviceSummary[]> {
   }
 
   const devices = await cloud.getDevices();
-  const filtered = devices.filter(d => {
+  const filtered = devices.filter((d) => {
     const deviceName = d['name'] || '';
     return deviceName.toLowerCase().includes(name.toLowerCase());
   });
 
-  return filtered.map(d => ({
+  return filtered.map((d) => ({
     did: d['did'] || '',
     name: d['name'] || '',
     model: d['model'] || '',
@@ -47,14 +47,18 @@ export async function findDeviceByName(name: string): Promise<DeviceSummary[]> {
 /**
  * Get device properties
  */
-export async function getDeviceProperties(did: string, siid: number, piids: number[]): Promise<{ did: string; properties: any[] }> {
+export async function getDeviceProperties(
+  did: string,
+  siid: number,
+  piids: number[],
+): Promise<{ did: string; properties: any[] }> {
   const cloud = await getAuthenticatedCloud();
   if (!cloud) {
     throw new AppError('AUTH_REQUIRED', '未认证，请先登录', 401);
   }
 
   try {
-    const params = piids.map(piid => ({ did, siid, piid }));
+    const params = piids.map((piid) => ({ did, siid, piid }));
     const results = await cloud.getProperties(params);
     return { did, properties: results };
   } catch (err) {
@@ -65,7 +69,12 @@ export async function getDeviceProperties(did: string, siid: number, piids: numb
 /**
  * Set device property
  */
-export async function setDeviceProperty(did: string, siid: number, piid: number, value: any): Promise<SetPropertyResponse> {
+export async function setDeviceProperty(
+  did: string,
+  siid: number,
+  piid: number,
+  value: any,
+): Promise<SetPropertyResponse> {
   const cloud = await getAuthenticatedCloud();
   if (!cloud) {
     throw new AppError('AUTH_REQUIRED', '未认证，请先登录', 401);
@@ -97,7 +106,12 @@ export async function setDeviceProperty(did: string, siid: number, piid: number,
 /**
  * Call device action
  */
-export async function callDeviceAction(did: string, siid: number, aiid: number, params: any[] = []): Promise<ActionResponse> {
+export async function callDeviceAction(
+  did: string,
+  siid: number,
+  aiid: number,
+  params: any[] = [],
+): Promise<ActionResponse> {
   const cloud = await getAuthenticatedCloud();
   if (!cloud) {
     throw new AppError('AUTH_REQUIRED', '未认证，请先登录', 401);

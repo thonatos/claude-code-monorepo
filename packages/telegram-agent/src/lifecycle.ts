@@ -38,16 +38,12 @@ export default class TelegramAgentLifecycle {
     this.logger.info('[telegram-agent] Application ready');
   }
 
-
   @LifecycleHook()
   didReady() {
     this.logger.info('[telegram-agent] Application fully ready');
 
     // Setup all bot handlers
-    this.botService.setupHandlers(
-      this.commandHandler,
-      (ctx) => this.messageHandler.handle(ctx)
-    );
+    this.botService.setupHandlers(this.commandHandler, (ctx) => this.messageHandler.handle(ctx));
 
     this.logger.info('[telegram-agent] Bot handlers registered');
   }

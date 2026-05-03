@@ -1,13 +1,13 @@
-import type { ArtusXContext } from "@artusx/core";
-import { Controller, Inject, POST } from "@artusx/core";
-import { WebhookService } from "./webhook.service";
+import type { ArtusXContext } from '@artusx/core';
+import { Controller, Inject, POST } from '@artusx/core';
+import { WebhookService } from './webhook.service';
 
-@Controller("/api/telegram")
+@Controller('/api/telegram')
 export default class WebhookController {
   @Inject(WebhookService)
   webhookService!: WebhookService;
 
-  @POST("/send-message")
+  @POST('/send-message')
   async sendMessage(ctx: ArtusXContext) {
     const body = ctx.request.body as any;
     const result = await this.webhookService.sendMessage({
@@ -18,7 +18,7 @@ export default class WebhookController {
     ctx.body = result;
   }
 
-  @POST("/send-media")
+  @POST('/send-media')
   async sendMedia(ctx: ArtusXContext) {
     const body = ctx.request.body as any;
     const result = await this.webhookService.sendMedia({
@@ -29,7 +29,7 @@ export default class WebhookController {
     return result;
   }
 
-  @POST("/edit-message")
+  @POST('/edit-message')
   async editMessage(ctx: ArtusXContext) {
     const body = ctx.request.body as any;
     const result = await this.webhookService.editMessage({
@@ -41,7 +41,7 @@ export default class WebhookController {
     return result;
   }
 
-  @POST("/send-reaction")
+  @POST('/send-reaction')
   async sendReaction(ctx: ArtusXContext): Promise<{ success: boolean }> {
     const body = ctx.request.body as any;
     await this.webhookService.sendReaction({

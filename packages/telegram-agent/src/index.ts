@@ -5,7 +5,7 @@ import { bootstrap } from '@artusx/utils';
 
 const ROOT_DIR = path.resolve(__dirname);
 
-bootstrap({ 
+bootstrap({
   root: ROOT_DIR,
-  configDir: 'config'
+  configDir: 'config',
 });

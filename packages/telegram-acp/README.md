@@ -64,6 +64,7 @@ npx telegram-acp agents
 ```
 
 Current presets:
+
 - `copilot` - GitHub Copilot
 - `claude` - Claude Code ACP
 - `codex` - Codex CLI
@@ -92,22 +93,22 @@ Config file is automatically loaded from `~/.telegram-acp/config.yaml` if it exi
 
 ```yaml
 telegram:
-  botToken: "bot_token_here"
+  botToken: 'bot_token_here'
 
 agent:
   preset: claude
 
-proxy: "socks5://user:pass@host:port"
+proxy: 'socks5://user:pass@host:port'
 
 allowedUsers:
-  - "123456"
-  - "789012"
+  - '123456'
+  - '789012'
 
 open: false
 
 reaction:
   enabled: true
-  emoji: "👍"
+  emoji: '👍'
 
 session:
   idleTimeoutMs: 86400000
@@ -118,7 +119,7 @@ showThoughts: false
 # Logging configuration
 observability:
   logging:
-    level: info              # CLI log level: error, warn, info, debug
+    level: info # CLI log level: error, warn, info, debug
 ```
 
 ## Environment Variables
@@ -147,6 +148,7 @@ TELEGRAM_ACP_LOG_LEVEL=debug npm start
 ### User Experience
 
 **Incoming Media Flow:**
+
 1. User sends image/audio to bot
 2. Bot shows 👀 reaction (acknowledgment)
 3. Bot shows 📤 reaction (downloading media)
@@ -156,6 +158,7 @@ TELEGRAM_ACP_LOG_LEVEL=debug npm start
 7. Bot shows ✅ reaction (complete, shown 500ms then cleared)
 
 **Outgoing Media Flow:**
+
 - If agent generates images/audio, bot automatically uploads to Telegram
 - Bot shows 📥 reaction during upload
 - Files appear in chat as native Telegram media
@@ -165,6 +168,7 @@ TELEGRAM_ACP_LOG_LEVEL=debug npm start
 Agents can indicate media files using two formats:
 
 1. **Markdown format** (recommended):
+
    ```
    ![screenshot](/tmp/output.png)
    ```
@@ -180,6 +184,7 @@ Both formats will trigger automatic media upload. The markdown syntax will be co
 ### Technical Details
 
 **Temporary Files:**
+
 - Downloaded media stored in `/tmp/telegram-acp/media/{userId}/`
 - Images passed via `uri` field (agent accesses via `readTextFile`)
 - Audio encoded as base64 (required by ACP spec)
@@ -187,6 +192,7 @@ Both formats will trigger automatic media upload. The markdown syntax will be co
 - Cleanup runs even if errors occur
 
 **Examples:**
+
 ```
 User: [Photo of code error]
 Bot: Looking at your screenshot...
@@ -201,16 +207,17 @@ Bot: Based on your description, here's the solution...
 
 The bot displays emoji reactions to provide real-time feedback on processing status:
 
-| Emoji | Phase | Meaning |
-|-------|-------|---------|
-| 👀 | Acknowledgment | Message received, starting processing |
-| 📤 | media_in | Downloading media from Telegram |
-| 📥 | media_out | Uploading media to Telegram |
-| 🤔 | thought | Agent is thinking/analyzing |
-| 🔧 | tool | Tool is being executed (ReadFile, Terminal, etc.) |
-| ✅ | done | Processing complete (shown 500ms then cleared) |
+| Emoji | Phase          | Meaning                                           |
+| ----- | -------------- | ------------------------------------------------- |
+| 👀    | Acknowledgment | Message received, starting processing             |
+| 📤    | media_in       | Downloading media from Telegram                   |
+| 📥    | media_out      | Uploading media to Telegram                       |
+| 🤔    | thought        | Agent is thinking/analyzing                       |
+| 🔧    | tool           | Tool is being executed (ReadFile, Terminal, etc.) |
+| ✅    | done           | Processing complete (shown 500ms then cleared)    |
 
 **Behavior:**
+
 - Reactions are debounced (500ms minimum delay between API calls)
 - Prevents API spam during rapid state changes
 - Best-effort - failures don't block main conversation flow
@@ -221,12 +228,14 @@ The bot displays emoji reactions to provide real-time feedback on processing sta
 ### What Users See
 
 **Clean message flow:**
+
 - User sends message
 - Bot shows 👀 reaction (acknowledgment)
 - Bot shows typing indicator while processing
 - Bot sends final response
 
 **No clutter:**
+
 - No tool call messages
 - No thinking messages
 - No status updates
@@ -234,6 +243,7 @@ The bot displays emoji reactions to provide real-time feedback on processing sta
 ### What CLI Shows
 
 **Detailed logging:**
+
 ```
 [thought] Analyzing the code structure...
 [tool] ReadFile (running)
@@ -300,6 +310,7 @@ packages/telegram-acp/src/
 ## Storage
 
 Runtime files stored under:
+
 ```
 ~/.telegram-acp/
 ├── config.yaml              # Configuration file (auto-loaded)

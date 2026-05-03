@@ -2,14 +2,14 @@
  * Session lifecycle management: create, restore, stop, restart, message recording.
  */
 
-import type { ChildProcess } from "node:child_process";
-import { TelegramAcpClient } from "../client.ts";
-import { HealthMonitor, DEFAULT_HEALTH_CONFIG, gracefulTerminate } from "../health.ts";
-import { spawnAgent } from "./spawn.ts";
-import { IdleManager } from "./idle-manager.ts";
-import type { UserSession, RestoredSession, SessionManagerOpts } from "./types.ts";
-import type { StoredSession, StoredMessage } from "../storage/types.ts";
-import type { FileStorage } from "../storage/file-storage.ts";
+import type { ChildProcess } from 'node:child_process';
+import { TelegramAcpClient } from '../client.ts';
+import { HealthMonitor, DEFAULT_HEALTH_CONFIG, gracefulTerminate } from '../health.ts';
+import { spawnAgent } from './spawn.ts';
+import { IdleManager } from './idle-manager.ts';
+import type { UserSession, RestoredSession, SessionManagerOpts } from './types.ts';
+import type { StoredSession, StoredMessage } from '../storage/types.ts';
+import type { FileStorage } from '../storage/file-storage.ts';
 
 export interface LifecycleOpts extends SessionManagerOpts {
   storage: FileStorage;
@@ -121,9 +121,9 @@ export class SessionLifecycle {
         const session = this.sessions.get(userId);
         if (session) {
           await this.restart(userId);
-          await this.opts.sendMessage(userId, "🔄 Session auto-recovered due to health issue", "HTML");
+          await this.opts.sendMessage(userId, '🔄 Session auto-recovered due to health issue', 'HTML');
         }
-      }
+      },
     );
 
     const session: UserSession = {
@@ -138,10 +138,10 @@ export class SessionLifecycle {
 
     // Setup process exit handler
     process.on('exit', (code, signal) => {
-      this.opts.log(`[agent] ${userId} exited code=${code ?? "?"} signal=${signal ?? "?"}`);
+      this.opts.log(`[agent] ${userId} exited code=${code ?? '?'} signal=${signal ?? '?'}`);
       const s = this.sessions.get(userId);
       if (s && s.process === process) {
-        s.healthMonitor.markUnhealthy(`Process exited with code=${code ?? "?"}`);
+        s.healthMonitor.markUnhealthy(`Process exited with code=${code ?? '?'}`);
         this.sessions.delete(userId);
         this.idleManager.clearTimer(userId);
       }
@@ -203,9 +203,9 @@ export class SessionLifecycle {
         const session = this.sessions.get(userId);
         if (session) {
           await this.restart(userId);
-          await this.opts.sendMessage(userId, "🔄 Session auto-recovered", "HTML");
+          await this.opts.sendMessage(userId, '🔄 Session auto-recovered', 'HTML');
         }
-      }
+      },
     );
 
     const session: UserSession = {
@@ -219,10 +219,10 @@ export class SessionLifecycle {
     };
 
     process.on('exit', (code, signal) => {
-      this.opts.log(`[agent] ${userId} exited code=${code ?? "?"} signal=${signal ?? "?"}`);
+      this.opts.log(`[agent] ${userId} exited code=${code ?? '?'} signal=${signal ?? '?'}`);
       const s = this.sessions.get(userId);
       if (s && s.process === process) {
-        s.healthMonitor.markUnhealthy(`Process exited with code=${code ?? "?"}`);
+        s.healthMonitor.markUnhealthy(`Process exited with code=${code ?? '?'}`);
         this.sessions.delete(userId);
         this.idleManager.clearTimer(userId);
       }
@@ -339,7 +339,7 @@ export class SessionLifecycle {
 
     if (maxDays !== null) {
       const cutoff = Date.now() - maxDays * 24 * 60 * 60 * 1000;
-      session.messages = session.messages.filter(m => m.timestamp >= cutoff);
+      session.messages = session.messages.filter((m) => m.timestamp >= cutoff);
     }
   }
 }

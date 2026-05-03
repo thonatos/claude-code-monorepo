@@ -27,8 +27,8 @@ export interface MediaUploadOptions {
 export interface MediaExtractResult {
   media: Array<{
     type: 'image' | 'audio';
-    path: string;        // Absolute file path
-    syntax: string;      // Original markdown syntax: ![alt](path)
+    path: string; // Absolute file path
+    syntax: string; // Original markdown syntax: ![alt](path)
   }>;
-  text: string;          // Original text (unchanged)
+  text: string; // Original text (unchanged)
 }

@@ -2,15 +2,16 @@
   "name": "telegram-acp",
   "version": "0.1.0",
   "description": "Bridge Telegram to any ACP-compatible AI agent",
-  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "telegram-acp": "./dist/bin/telegram-acp.js"
+  },
   "files": [
     "dist/",
     "README.md",
     "package.json"
   ],
-  "bin": {
-    "telegram-acp": "./dist/bin/telegram-acp.js"
-  },
+  "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "exports": {
@@ -44,6 +45,5 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  },
-  "license": "MIT"
+  }
 }

@@ -2,15 +2,15 @@
  * SessionManager - orchestrates session lifecycle.
  */
 
-import path from "node:path";
-import fs from "node:fs";
-import { FileStorage } from "../storage/index.ts";
-import { SessionLifecycle } from "./lifecycle.ts";
-import type { UserSession, RestoredSession, SessionManagerOpts } from "./types.ts";
-import type { StoredSession } from "../storage/types.ts";
-import { defaultStorageDir } from "../config.ts";
+import path from 'node:path';
+import fs from 'node:fs';
+import { FileStorage } from '../storage/index.ts';
+import { SessionLifecycle } from './lifecycle.ts';
+import type { UserSession, RestoredSession, SessionManagerOpts } from './types.ts';
+import type { StoredSession } from '../storage/types.ts';
+import { defaultStorageDir } from '../config.ts';
 
-export { UserSession, RestoredSession, SessionManagerOpts } from "./types.ts";
+export { UserSession, RestoredSession, SessionManagerOpts } from './types.ts';
 
 export class SessionManager {
   private lifecycle: SessionLifecycle;

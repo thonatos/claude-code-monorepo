@@ -2,8 +2,8 @@
  * Idle timeout management and session eviction.
  */
 
-import type { UserSession } from "./types.ts";
-import { gracefulTerminate } from "../health.ts";
+import type { UserSession } from './types.ts';
+import { gracefulTerminate } from '../health.ts';
 
 export interface IdleManagerOpts {
   idleTimeoutMs: number;
@@ -82,7 +82,7 @@ export class IdleManager {
       const session = sessions.get(oldest.userId);
       if (session) {
         session.healthMonitor.stop();
-        gracefulTerminate(session.process, 5000, this.opts.log).catch(err => {
+        gracefulTerminate(session.process, 5000, this.opts.log).catch((err) => {
           this.opts.log(`[session] Eviction error: ${String(err)}`);
         });
         sessions.delete(oldest.userId);

@@ -44,7 +44,8 @@ export function genNonce(): Buffer {
  * Generate signed nonce: SHA256(ssecurity + nonce)
  */
 export function genSignedNonce(ssecurity: Buffer, nonce: Buffer): Buffer {
-  return crypto.createHash('sha256')
+  return crypto
+    .createHash('sha256')
     .update(Buffer.concat([ssecurity, nonce]))
     .digest();
 }
@@ -59,10 +60,7 @@ export function genSignature(path: string, data: Record<string, string>, signedN
   }
   params.push(signedNonce.toString('base64'));
   const signatureStr = params.join('&');
-  return crypto.createHash('sha1')
-    .update(signatureStr)
-    .digest()
-    .toString('base64');
+  return crypto.createHash('sha1').update(signatureStr).digest().toString('base64');
 }
 
 /**

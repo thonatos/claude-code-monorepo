@@ -14,7 +14,7 @@ export class StreamingMessageState {
 
   constructor(
     private readonly callbacks: MessageCallbacks,
-    private readonly config: StreamingConfig = DEFAULT_STREAMING_CONFIG
+    private readonly config: StreamingConfig = DEFAULT_STREAMING_CONFIG,
   ) {
     this.thoughtStream = new MessageStream('thought', callbacks, config, formatThought);
     this.textStream = new MessageStream('text', callbacks, config, markdownToHtml);

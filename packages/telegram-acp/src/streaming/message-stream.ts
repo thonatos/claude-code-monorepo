@@ -18,7 +18,7 @@ export class MessageStream {
     private readonly type: StreamType,
     private readonly callbacks: MessageCallbacks,
     private readonly config: StreamingConfig,
-    private readonly formatter: (text: string) => string
+    private readonly formatter: (text: string) => string,
   ) {}
 
   async append(chunk: string): Promise<void> {
@@ -43,7 +43,7 @@ export class MessageStream {
 
     if (this.msgId) {
       const shouldEditByThreshold = this.charCount >= this.config.editThreshold;
-      const shouldEditByTime = (now - this.lastEditTime) >= this.config.editIntervalMs && this.charCount > 0;
+      const shouldEditByTime = now - this.lastEditTime >= this.config.editIntervalMs && this.charCount > 0;
 
       if (shouldEditByThreshold || shouldEditByTime) {
         const elapsed = now - this.lastEditTime;
@@ -107,7 +107,7 @@ export class MessageStream {
 
   async finalize(): Promise<string> {
     while (this.isSending) {
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
     }
 
     const text = this.chunks.join('');

@@ -1,14 +1,14 @@
-import { Readable, Writable } from "node:stream";
-import * as acp from "@agentclientprotocol/sdk";
-import type { ArtusApplication } from "@artusx/core";
-import { ArtusInjectEnum, Inject, Injectable } from "@artusx/core";
-import { BotService } from "../module-bot/bot.service";
-import { MediaHandler } from "../module-bot/media.handler";
-import { ReactionService } from "../module-bot/reaction.service";
-import { type ACPClient, InjectEnum as ACPInjectEnum } from "../plugins/acp";
-import type { AppConfig, UserSession, WebhookRequest } from "../types";
-import { AgentProcessService } from "./agent-process.service";
-import { SessionService } from "./session.service";
+import { Readable, Writable } from 'node:stream';
+import * as acp from '@agentclientprotocol/sdk';
+import type { ArtusApplication } from '@artusx/core';
+import { ArtusInjectEnum, Inject, Injectable } from '@artusx/core';
+import { BotService } from '../module-bot/bot.service';
+import { MediaHandler } from '../module-bot/media.handler';
+import { ReactionService } from '../module-bot/reaction.service';
+import { type ACPClient, InjectEnum as ACPInjectEnum } from '../plugins/acp';
+import type { AppConfig, UserSession, WebhookRequest } from '../types';
+import { AgentProcessService } from './agent-process.service';
+import { SessionService } from './session.service';
 
 @Injectable()
 export class BridgeService {
@@ -75,7 +75,7 @@ export class BridgeService {
       this.logger.info(`[bridge] Restoring session ${stored.sessionId} for user ${userId}`);
       sessionId = stored.sessionId;
       createdAt = stored.createdAt;
-      await this.sessionService.updateStatus(userId, sessionId, "active");
+      await this.sessionService.updateStatus(userId, sessionId, 'active');
     } else {
       sessionId = `${userId}-${Date.now()}`;
       createdAt = Date.now();
@@ -84,7 +84,7 @@ export class BridgeService {
         sessionId,
         createdAt,
         lastActivity: createdAt,
-        status: "active",
+        status: 'active',
         messages: [],
       });
       this.logger.info(`[bridge] Created new session ${sessionId} for user ${userId}`);
@@ -128,7 +128,7 @@ export class BridgeService {
   async closeUserSession(userId: string): Promise<void> {
     const sessionId = this.currentSessionIds.get(userId);
     if (sessionId) {
-      await this.sessionService.updateStatus(userId, sessionId, "inactive");
+      await this.sessionService.updateStatus(userId, sessionId, 'inactive');
     }
 
     const connection = this.connections.get(userId);
@@ -163,8 +163,8 @@ export class BridgeService {
       sendTyping: async () => {
         await this.botService.sendTyping(userId);
       },
-      onMediaUpload: async (path: string, type: "image" | "audio") => {
-        if (type === "image") {
+      onMediaUpload: async (path: string, type: 'image' | 'audio') => {
+        if (type === 'image') {
           await this.mediaHandler.uploadPhoto(userId, path);
         } else {
           await this.mediaHandler.uploadAudio(userId, path);
@@ -175,7 +175,7 @@ export class BridgeService {
         // Record agent message
         const sessionId = this.currentSessionIds.get(userId);
         if (sessionId && text) {
-          await this.sessionService.recordMessage(userId, sessionId, "agent", text);
+          await this.sessionService.recordMessage(userId, sessionId, 'agent', text);
         }
       },
     });
@@ -185,7 +185,7 @@ export class BridgeService {
 
     // Verify streams exist
     if (!agentProcess.stdin || !agentProcess.stdout) {
-      throw new Error("Failed to create agent process streams");
+      throw new Error('Failed to create agent process streams');
     }
 
     // Create streams
@@ -232,7 +232,7 @@ export class BridgeService {
     await this.ensureConnection(userId);
 
     if (!this.connection || !this.currentSessionId) {
-      throw new Error("Connection not initialized");
+      throw new Error('Connection not initialized');
     }
 
     // Set user message ID for reaction tracking
@@ -260,7 +260,7 @@ export class BridgeService {
     // Record user message
     const sessionId = this.currentSessionIds.get(userId);
     if (sessionId) {
-      await this.sessionService.recordMessage(userId, sessionId, "user", promptContent);
+      await this.sessionService.recordMessage(userId, sessionId, 'user', promptContent);
     }
   }
 
@@ -271,7 +271,7 @@ export class BridgeService {
       sessionId: this.currentSessionId,
       prompt: [
         {
-          type: "text",
+          type: 'text',
           text: prompt,
         },
       ],
@@ -282,17 +282,17 @@ export class BridgeService {
     const { userId, action, data } = request;
 
     switch (action) {
-      case "send-message":
+      case 'send-message':
         return await this.botService.sendMessage(userId, data.text, data.options);
-      case "send-media":
-        if (data.type === "image") {
+      case 'send-media':
+        if (data.type === 'image') {
           return await this.mediaHandler.uploadPhoto(userId, data.filePath);
         } else {
           return await this.mediaHandler.uploadAudio(userId, data.filePath);
         }
-      case "edit-message":
+      case 'edit-message':
         return await this.botService.editMessage(userId, data.messageId, data.text, data.options);
-      case "send-reaction":
+      case 'send-reaction':
         return await this.botService.sendReaction(userId, data.messageId);
       default:
         throw new Error(`Unknown action: ${action}`);
@@ -300,11 +300,11 @@ export class BridgeService {
   }
 
   async close(): Promise<void> {
-    this.logger.info("[bridge] Closing all connections...");
+    this.logger.info('[bridge] Closing all connections...');
 
     // Update all session statuses to inactive
     for (const [userId, sessionId] of this.currentSessionIds) {
-      await this.sessionService.updateStatus(userId, sessionId, "inactive");
+      await this.sessionService.updateStatus(userId, sessionId, 'inactive');
     }
 
     // Close all user sessions
@@ -321,6 +321,6 @@ export class BridgeService {
     this.acpClient.reset();
     this.sessionService.stop();
 
-    this.logger.info("[bridge] All connections closed");
+    this.logger.info('[bridge] All connections closed');
   }
 }

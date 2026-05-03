@@ -2,13 +2,13 @@
  * Health check and auto-recovery for agent sessions.
  */
 
-import type { ChildProcess } from "node:child_process";
+import type { ChildProcess } from 'node:child_process';
 
 export interface HealthCheckConfig {
   enabled: boolean;
-  intervalMs: number;         // Check interval (default: 30000ms)
-  timeoutMs: number;          // Process response timeout (default: 5000ms)
-  maxFailures: number;        // Max consecutive failures before recovery (default: 3)
+  intervalMs: number; // Check interval (default: 30000ms)
+  timeoutMs: number; // Process response timeout (default: 5000ms)
+  maxFailures: number; // Max consecutive failures before recovery (default: 3)
 }
 
 export const DEFAULT_HEALTH_CONFIG: HealthCheckConfig = {
@@ -43,7 +43,7 @@ export class HealthMonitor {
   constructor(
     private readonly config: HealthCheckConfig,
     private readonly log: (msg: string) => void,
-    private readonly onUnhealthy: () => Promise<void>
+    private readonly onUnhealthy: () => Promise<void>,
   ) {}
 
   /**
@@ -54,9 +54,9 @@ export class HealthMonitor {
       return;
     }
 
-    this.log("[health] Starting health monitor");
+    this.log('[health] Starting health monitor');
     this.timer = setInterval(() => {
-      this.check().catch(err => {
+      this.check().catch((err) => {
         this.log(`[health] Check failed: ${String(err)}`);
       });
     }, this.config.intervalMs);
@@ -74,7 +74,7 @@ export class HealthMonitor {
       clearInterval(this.timer);
       this.timer = null;
     }
-    this.log("[health] Stopped health monitor");
+    this.log('[health] Stopped health monitor');
   }
 
   /**
@@ -110,7 +110,7 @@ export class HealthMonitor {
     if (this.stopping) return;
 
     const now = Date.now();
-    
+
     // If too many consecutive failures, trigger recovery
     if (this.status.consecutiveFailures >= this.config.maxFailures) {
       this.log(`[health] Unhealthy: ${this.status.consecutiveFailures} consecutive failures, triggering recovery`);
@@ -134,7 +134,7 @@ export class HealthMonitor {
 export function isProcessAlive(proc: ChildProcess | null): boolean {
   if (!proc) return false;
   if (proc.killed) return false;
-  
+
   try {
     // Sending signal 0 checks if process exists without killing it
     process.kill(proc.pid!, 0);
@@ -150,7 +150,7 @@ export function isProcessAlive(proc: ChildProcess | null): boolean {
 export async function gracefulTerminate(
   proc: ChildProcess,
   timeoutMs: number = 5000,
-  log?: (msg: string) => void
+  log?: (msg: string) => void,
 ): Promise<void> {
   if (!proc || proc.killed) {
     return;

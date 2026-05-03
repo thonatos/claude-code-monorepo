@@ -44,13 +44,13 @@ export class ACPClient implements acp.Client {
     this.logger.info(`[acp] setUserMessageId(${messageId})`);
     this.userMessageId = messageId;
     this.reactionRemoved = false;
-    
+
     // Set timeout - DON'T clear previous timeout here
     this.logger.info(`[reaction] ⏰ Setting timeout (5000ms) for message ${messageId}`);
-    
+
     this.reactionTimeout = setTimeout(async () => {
       this.logger.warn(`[reaction] ⏱️ TIMEOUT triggered!`);
-      
+
       if (!this.reactionRemoved && this.userMessageId && this.opts.removeReaction) {
         this.logger.info(`[reaction] 🔄 Removing via timeout...`);
         try {
@@ -68,10 +68,10 @@ export class ACPClient implements acp.Client {
 
   reset(): void {
     this.logger.info(`[acp] reset() - keeping reaction timeout`);
-    
+
     // DON'T clear timeout here! Let it run to completion
     // Just reset message state
-    
+
     this.chunks = [];
     this.pendingText = '';
     this.currentMessageId = null;
@@ -81,7 +81,7 @@ export class ACPClient implements acp.Client {
   }
 
   async requestPermission(params: acp.RequestPermissionRequest): Promise<acp.RequestPermissionResponse> {
-    const allowOpt = params.options.find(o => o.kind === 'allow_once' || o.kind === 'allow_always');
+    const allowOpt = params.options.find((o) => o.kind === 'allow_once' || o.kind === 'allow_always');
     const optionId = allowOpt?.optionId ?? params.options[0]?.optionId ?? 'allow';
 
     return {
@@ -99,13 +99,13 @@ export class ACPClient implements acp.Client {
     if (this.sessionId && this.sessionId !== sessionId) {
       this.logger.info(`[acp] Session changed`);
       await this.removeReactionIfNeeded();
-      
+
       // Clear timeout on session change
       if (this.reactionTimeout) {
         clearTimeout(this.reactionTimeout);
         this.reactionTimeout = null;
       }
-      
+
       this.chunks = [];
       this.pendingText = '';
       this.currentMessageId = null;
@@ -183,7 +183,7 @@ export class ACPClient implements acp.Client {
       clearTimeout(this.reactionTimeout);
       this.reactionTimeout = null;
     }
-    
+
     if (this.userMessageId && !this.reactionRemoved && this.opts.removeReaction) {
       this.logger.info(`[reaction] 🔄 Removing...`);
       try {
@@ -200,9 +200,9 @@ export class ACPClient implements acp.Client {
   private async handleMessageChunk(update: any): Promise<void> {
     if (update.content.type === 'text') {
       const chunk = update.content.text;
-      
+
       if (!chunk || chunk.trim().length === 0) return;
-      
+
       this.chunks.push(chunk);
       const fullText = this.chunks.join('');
 
@@ -218,14 +218,14 @@ export class ACPClient implements acp.Client {
         const now = Date.now();
         const timeSinceLastEdit = now - this.lastEditTime;
         const textChanged = fullText.length - this.pendingText.length;
-        
+
         if (timeSinceLastEdit >= this.minEditInterval || textChanged > 50 || fullText.endsWith('\n\n')) {
           try {
             await this.opts.editMessage(this.currentMessageId, fullText);
             this.pendingText = fullText;
             this.lastEditTime = now;
             this.editCount++;
-            
+
             if (this.editCount % 10 === 0) {
               this.logger.info(`[stream] ✏️ #${this.editCount}`);
             }

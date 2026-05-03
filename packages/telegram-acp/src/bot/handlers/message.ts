@@ -2,25 +2,22 @@
  * Message handler for Telegram bot.
  */
 
-import { Context } from "grammy";
-import type * as acp from "@agentclientprotocol/sdk";
-import type { AcpContext } from "../middleware/session.ts";
-import type { HistoryInjector } from "../../history.ts";
-import type { MediaInfo, MediaDownloadResult } from "../../media/types.ts";
-import { MediaDownloader, TempFileManager } from "../../media/index.ts";
-import type { ReactionPhase } from "../../reaction/types.ts";
-import { ReactionManager, DEFAULT_EMOJI_MAP } from "../../reaction/index.ts";
-import fs from "node:fs";
+import { Context } from 'grammy';
+import type * as acp from '@agentclientprotocol/sdk';
+import type { AcpContext } from '../middleware/session.ts';
+import type { HistoryInjector } from '../../history.ts';
+import type { MediaInfo, MediaDownloadResult } from '../../media/types.ts';
+import { MediaDownloader, TempFileManager } from '../../media/index.ts';
+import type { ReactionPhase } from '../../reaction/types.ts';
+import { ReactionManager, DEFAULT_EMOJI_MAP } from '../../reaction/index.ts';
+import fs from 'node:fs';
 
 export interface MessageHandlerModules {
   downloader: MediaDownloader;
   tempManager: TempFileManager;
 }
 
-export function createMessageHandler(
-  historyInjector: HistoryInjector,
-  modules?: MessageHandlerModules
-) {
+export function createMessageHandler(historyInjector: HistoryInjector, modules?: MessageHandlerModules) {
   return async (ctx: Context) => {
     const userId = ctx.from?.id.toString();
     if (!userId) return;
@@ -45,7 +42,7 @@ export function createMessageHandler(
 
     // 1. React with acknowledgment
     try {
-      await ctx.react("👀");
+      await ctx.react('👀');
     } catch {
       // Best-effort - don't block if fails
     }
@@ -88,15 +85,15 @@ export function createMessageHandler(
 
     // Add text
     if (prompt) {
-      content.push({ type: "text", text: prompt });
+      content.push({ type: 'text', text: prompt });
     }
 
     // Add media (image/audio)
     if (mediaResult && mediaResult.type === 'image') {
       // ImageContent supports uri property
       content.push({
-        type: "image",
-        data: "", // Base64 data (empty for local file approach via uri)
+        type: 'image',
+        data: '', // Base64 data (empty for local file approach via uri)
         mimeType: mediaResult.mimeType,
         uri: mediaResult.path, // Agent can access via readTextFile
       });
@@ -106,7 +103,7 @@ export function createMessageHandler(
         const audioBuffer = await fs.promises.readFile(mediaResult.path);
         const base64Data = audioBuffer.toString('base64');
         content.push({
-          type: "audio",
+          type: 'audio',
           data: base64Data,
           mimeType: mediaResult.mimeType,
         });
@@ -142,10 +139,10 @@ export function createMessageHandler(
       let replyText = await session.client.flush();
 
       // Handle stop reasons
-      if (result.stopReason === "cancelled") {
-        replyText += "\n[cancelled]";
-      } else if (result.stopReason === "refusal") {
-        replyText += "\n[agent refused]";
+      if (result.stopReason === 'cancelled') {
+        replyText += '\n[cancelled]';
+      } else if (result.stopReason === 'refusal') {
+        replyText += '\n[agent refused]';
       }
 
       // Record agent reply
@@ -154,7 +151,7 @@ export function createMessageHandler(
       // 9. Show done reaction and clear
       try {
         await reactionManager.setReaction('done');
-        await new Promise(r => setTimeout(r, 500)); // Show done for 500ms
+        await new Promise((r) => setTimeout(r, 500)); // Show done for 500ms
         await reactionManager.clearReaction();
       } catch {}
 

@@ -4,13 +4,13 @@
  * telegram-acp CLI entry point.
  */
 
-import { TelegramAcpBridge } from "../bridge.ts";
-import { loadConfig, listPresets } from "../config.ts";
+import { TelegramAcpBridge } from '../bridge.ts';
+import { loadConfig, listPresets } from '../config.ts';
 
 function usage(): void {
   const presets = listPresets()
     .map(({ id }) => id)
-    .join(", ");
+    .join(', ');
 
   console.log(`
 telegram-acp — Bridge Telegram to ACP-compatible AI agents
@@ -50,8 +50,8 @@ function parseArgs(argv: string[]): {
   let i = 0;
 
   // Check for subcommand first
-  if (args[0] && !args[0].startsWith("-")) {
-    if (args[0] === "agents") {
+  if (args[0] && !args[0].startsWith('-')) {
+    if (args[0] === 'agents') {
       handleAgents();
       process.exit(0);
     }
@@ -63,18 +63,18 @@ function parseArgs(argv: string[]): {
   while (i < args.length) {
     const arg = args[i];
     switch (arg) {
-      case "--preset":
+      case '--preset':
         result.preset = args[++i];
         break;
-      case "--config":
+      case '--config':
         result.configFile = args[++i];
         break;
-      case "-h":
-      case "--help":
+      case '-h':
+      case '--help':
         result.help = true;
         break;
       default:
-        if (arg?.startsWith("-")) {
+        if (arg?.startsWith('-')) {
           console.error(`Unknown option: ${arg}`);
           usage();
           process.exit(1);
@@ -87,7 +87,7 @@ function parseArgs(argv: string[]): {
 }
 
 function handleAgents(): void {
-  console.log("Available presets:\n");
+  console.log('Available presets:\n');
   for (const { id, preset } of listPresets()) {
     console.log(`  ${id.padEnd(8)} ${preset.label}`);
   }
@@ -105,14 +105,14 @@ async function main(): Promise<void> {
 
   // Validate bot token
   if (!config.telegram.botToken) {
-    console.error("Error: botToken not configured");
+    console.error('Error: botToken not configured');
     console.error("Add 'telegram.botToken' to ~/.telegram-acp/config.yaml");
     process.exit(1);
   }
 
   // Validate agent
   if (!config.agent.command) {
-    console.error("Error: agent not configured");
+    console.error('Error: agent not configured');
     console.error("Use --preset <name> or add 'agent.preset' to config");
     process.exit(1);
   }
@@ -130,8 +130,8 @@ async function main(): Promise<void> {
     await bridge.stop();
     process.exit(0);
   };
-  process.on("SIGINT", () => void shutdown());
-  process.on("SIGTERM", () => void shutdown());
+  process.on('SIGINT', () => void shutdown());
+  process.on('SIGTERM', () => void shutdown());
 
   try {
     await bridge.start();

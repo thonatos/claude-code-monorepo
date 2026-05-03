@@ -1,9 +1,9 @@
-import type { ArtusApplication } from "@artusx/core";
-import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from "@artusx/core";
-import type { Context } from "grammy";
-import { BridgeService } from "../module-bridge/bridge.service";
-import { SessionService } from "../module-bridge/session.service";
-import { BotService } from "./bot.service";
+import type { ArtusApplication } from '@artusx/core';
+import { ArtusInjectEnum, Inject, Injectable, ScopeEnum } from '@artusx/core';
+import type { Context } from 'grammy';
+import { BridgeService } from '../module-bridge/bridge.service';
+import { SessionService } from '../module-bridge/session.service';
+import { BotService } from './bot.service';
 
 @Injectable({
   scope: ScopeEnum.TRANSIENT,
@@ -27,7 +27,7 @@ export class CommandHandler {
 
   async handleStart(ctx: Context): Promise<void> {
     const userId = ctx.from?.id.toString();
-    const username = ctx.from?.username || ctx.from?.first_name || "unknown";
+    const username = ctx.from?.username || ctx.from?.first_name || 'unknown';
     if (!userId) return;
 
     this.logger.info(`[command] /start from ${username} (${userId})`);
@@ -39,14 +39,12 @@ export class CommandHandler {
     if (session) {
       const messageCount = stored?.messages.length ?? 0;
       await ctx.reply(
-        `<b>Session restored</b>\n` +
-          `Session ID: <code>${session.sessionId}</code>\n` +
-          `Messages: ${messageCount}`,
-        { parse_mode: "HTML" }
+        `<b>Session restored</b>\n` + `Session ID: <code>${session.sessionId}</code>\n` + `Messages: ${messageCount}`,
+        { parse_mode: 'HTML' },
       );
     } else {
       await ctx.reply(`<b>Session ready</b>\n` + `Send a message to start chatting.`, {
-        parse_mode: "HTML",
+        parse_mode: 'HTML',
       });
     }
   }
@@ -62,7 +60,7 @@ export class CommandHandler {
     const stored = sessionId ? await this.sessionService.load(userId, sessionId) : null;
 
     if (!session || !sessionId) {
-      await ctx.reply("<b>No active session</b>", { parse_mode: "HTML" });
+      await ctx.reply('<b>No active session</b>', { parse_mode: 'HTML' });
       return;
     }
 
@@ -71,11 +69,11 @@ export class CommandHandler {
     await ctx.reply(
       `<b>Session Status</b>\n\n` +
         `<b>ID:</b> <code>${session.sessionId}</code>\n` +
-        `<b>Created:</b> ${stored ? formatDate(stored.createdAt) : "N/A"}\n` +
+        `<b>Created:</b> ${stored ? formatDate(stored.createdAt) : 'N/A'}\n` +
         `<b>Last Activity:</b> ${formatDate(session.lastActivity.getTime())}\n` +
         `<b>Messages:</b> ${stored?.messages.length ?? 0}\n` +
-        `<b>Status:</b> ${stored?.status ?? "N/A"}`,
-      { parse_mode: "HTML" }
+        `<b>Status:</b> ${stored?.status ?? 'N/A'}`,
+      { parse_mode: 'HTML' },
     );
   }
 
@@ -85,19 +83,19 @@ export class CommandHandler {
 
     this.logger.info(`[command] /restart from ${userId}`);
 
-    await ctx.reply("<b>Restarting session...</b>", { parse_mode: "HTML" });
+    await ctx.reply('<b>Restarting session...</b>', { parse_mode: 'HTML' });
 
     // Mark current session as terminated
     const sessionId = this.bridgeService.getUserSessionId(userId);
     if (sessionId) {
-      await this.sessionService.updateStatus(userId, sessionId, "terminated");
+      await this.sessionService.updateStatus(userId, sessionId, 'terminated');
     }
 
     await this.bridgeService.closeUserSession(userId);
     this.bridgeService.resetReactionState(userId);
 
     await ctx.reply(`<b>Session closed</b>\n` + `Send a message to start new session.`, {
-      parse_mode: "HTML",
+      parse_mode: 'HTML',
     });
   }
 
@@ -113,7 +111,7 @@ export class CommandHandler {
     }
 
     this.bridgeService.resetReactionState(userId);
-    await ctx.reply("<b>History cleared</b>", { parse_mode: "HTML" });
+    await ctx.reply('<b>History cleared</b>', { parse_mode: 'HTML' });
   }
 
   async handleHelp(ctx: Context): Promise<void> {
@@ -131,7 +129,7 @@ export class CommandHandler {
         `<code>/status</code> - Show session details\n` +
         `<code>/restart</code> - Restart session\n` +
         `<code>/clear</code> - Clear state`,
-      { parse_mode: "HTML" }
+      { parse_mode: 'HTML' },
     );
   }
 }

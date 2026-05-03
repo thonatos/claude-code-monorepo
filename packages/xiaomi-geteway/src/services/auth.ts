@@ -73,7 +73,7 @@ export async function initiateLogin(req: LoginRequest): Promise<LoginResponse> {
     cachedCloud = cloud;
 
     const devices = await cloud.getDevices();
-    const deviceSummary: DeviceSummary[] = devices.map(d => ({
+    const deviceSummary: DeviceSummary[] = devices.map((d) => ({
       name: d['name'] || '?',
       model: d['model'] || '?',
       is_online: d['isOnline'] || false,
@@ -150,7 +150,7 @@ export async function submitVerification(req: VerifyRequest): Promise<VerifyResp
   cachedCloud = cloud;
 
   const devices = await cloud.getDevices();
-  const deviceSummary: DeviceSummary[] = devices.map(d => ({
+  const deviceSummary: DeviceSummary[] = devices.map((d) => ({
     name: d['name'] || '?',
     model: d['model'] || '?',
     is_online: d['isOnline'] || false,

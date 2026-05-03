@@ -74,7 +74,7 @@ export class MiCloud {
   private async request(
     method: 'GET' | 'POST',
     url: string,
-    options: { params?: Record<string, any>; data?: Record<string, any>; extraCookies?: Record<string, string> } = {}
+    options: { params?: Record<string, any>; data?: Record<string, any>; extraCookies?: Record<string, string> } = {},
   ): Promise<AxiosResponse> {
     const headers = { Cookie: this.getCookieHeader(options.extraCookies) };
     if (method === 'GET') {

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Trading Terminal Theme */
 @theme {
@@ -18,8 +18,8 @@
   --color-trading-amber-dim: rgba(245, 158, 11, 0.15);
   --color-trading-blue: #3b82f6;
   --color-trading-blue-dim: rgba(59, 130, 246, 0.15);
-  --font-mono: "JetBrains Mono", monospace;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Dark Theme (default) */
@@ -43,7 +43,7 @@
 }
 
 /* Light Theme */
-[data-theme="light"] {
+[data-theme='light'] {
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --bg-card: #ffffff;
@@ -64,5 +64,7 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }

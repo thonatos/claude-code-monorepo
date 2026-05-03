@@ -1,16 +1,16 @@
-import path from "node:path";
+import path from 'node:path';
 
 export default {
   artusx: {
     enable: true,
-    package: "@artusx/core",
+    package: '@artusx/core',
   },
   telegram: {
     enable: true,
-    path: path.resolve(__dirname, "../plugins/telegram"),
+    path: path.resolve(__dirname, '../plugins/telegram'),
   },
   acp: {
     enable: true,
-    path: path.resolve(__dirname, "../plugins/acp"),
+    path: path.resolve(__dirname, '../plugins/acp'),
   },
 };

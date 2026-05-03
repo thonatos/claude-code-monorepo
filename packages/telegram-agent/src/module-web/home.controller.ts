@@ -1,13 +1,13 @@
-import type { ArtusXContext, NunjucksClient } from "@artusx/core";
-import { ArtusXInjectEnum, Controller, GET, Inject } from "@artusx/core";
+import type { ArtusXContext, NunjucksClient } from '@artusx/core';
+import { ArtusXInjectEnum, Controller, GET, Inject } from '@artusx/core';
 
 @Controller()
 export default class HomeController {
   @Inject(ArtusXInjectEnum.Nunjucks)
   nunjucks!: NunjucksClient;
 
-  @GET("/")
+  @GET('/')
   async home(ctx: ArtusXContext) {
-    ctx.body = this.nunjucks.render("index.html", { title: "ArtusX", message: "Hello ArtusX!" });
+    ctx.body = this.nunjucks.render('index.html', { title: 'ArtusX', message: 'Hello ArtusX!' });
   }
 }

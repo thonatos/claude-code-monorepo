@@ -30,7 +30,7 @@ describe('ReactionManager', () => {
     await manager.setReaction('thought');
 
     // Wait for debounce to expire
-    await new Promise(r => setTimeout(r, REACTION_DEBOUNCE_MS + 10));
+    await new Promise((r) => setTimeout(r, REACTION_DEBOUNCE_MS + 10));
 
     await manager.setReaction('tool'); // Different phase
 
@@ -62,7 +62,7 @@ describe('ReactionManager', () => {
     expect(mockReact).toHaveBeenCalledTimes(1);
 
     // Wait for debounce to expire
-    await new Promise(r => setTimeout(r, REACTION_DEBOUNCE_MS + 10));
+    await new Promise((r) => setTimeout(r, REACTION_DEBOUNCE_MS + 10));
 
     // Now should allow update
     await manager.setReaction('tool');

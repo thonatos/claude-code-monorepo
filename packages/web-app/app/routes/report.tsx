@@ -1,6 +1,6 @@
-import { useLoaderData } from "react-router";
-import type { Route } from "./+types/report";
-import { Card, Badge, SignalItem } from "../components/trading";
+import { useLoaderData } from 'react-router';
+import type { Route } from './+types/report';
+import { Card, Badge, SignalItem } from '../components/trading';
 
 // Types
 interface ReportData {
@@ -9,9 +9,9 @@ interface ReportData {
   change: string;
   interval: string;
   datetime: string;
-  trend: "上涨" | "下跌" | "震荡";
-  action: "买入" | "卖出" | "观望";
-  riskLevel: "低" | "中" | "高";
+  trend: '上涨' | '下跌' | '震荡';
+  action: '买入' | '卖出' | '观望';
+  riskLevel: '低' | '中' | '高';
   support1: { price: number; note: string };
   support2: { price: number; note: string };
   resistance1: { price: number; note: string };
@@ -27,34 +27,35 @@ interface ReportData {
 
 // Mock Data Generator
 function generateReportData(symbol: string, interval: string, datetime: string): ReportData {
-  const hash = symbol.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
+  const hash = symbol.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
   const basePrice = 100 + (hash % 900);
   const changePercent = ((hash % 100) - 50) / 10;
   const isUp = changePercent > 0;
 
-  const trend: ReportData["trend"] = changePercent > 2 ? "上涨" : changePercent < -2 ? "下跌" : "震荡";
-  const action: ReportData["action"] = isUp ? "买入" : "观望";
-  const riskLevel: ReportData["riskLevel"] = Math.abs(changePercent) > 5 ? "高" : Math.abs(changePercent) > 2 ? "中" : "低";
+  const trend: ReportData['trend'] = changePercent > 2 ? '上涨' : changePercent < -2 ? '下跌' : '震荡';
+  const action: ReportData['action'] = isUp ? '买入' : '观望';
+  const riskLevel: ReportData['riskLevel'] =
+    Math.abs(changePercent) > 5 ? '高' : Math.abs(changePercent) > 2 ? '中' : '低';
 
   return {
     symbol,
     price: basePrice,
-    change: `${changePercent > 0 ? "+" : ""}${changePercent.toFixed(2)}%`,
+    change: `${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%`,
     interval,
     datetime,
     trend,
     action,
     riskLevel,
-    support1: { price: basePrice * 0.95, note: "20 日均线" },
-    support2: { price: basePrice * 0.90, note: "60 日均线" },
-    resistance1: { price: basePrice * 1.05, note: "前期高点" },
-    resistance2: { price: basePrice * 1.10, note: "历史阻力位" },
-    bullishSignals: ["MACD 金叉", "成交量放大"],
-    bearishSignals: ["RSI 超买区域"],
-    entryCondition: "突破阻力位后回踩确认",
+    support1: { price: basePrice * 0.95, note: '20 日均线' },
+    support2: { price: basePrice * 0.9, note: '60 日均线' },
+    resistance1: { price: basePrice * 1.05, note: '前期高点' },
+    resistance2: { price: basePrice * 1.1, note: '历史阻力位' },
+    bullishSignals: ['MACD 金叉', '成交量放大'],
+    bearishSignals: ['RSI 超买区域'],
+    entryCondition: '突破阻力位后回踩确认',
     stopLoss: basePrice * 0.95,
-    takeProfit: [basePrice * 1.05, basePrice * 1.10],
-    risks: ["宏观经济不确定性", "行业政策变化"],
+    takeProfit: [basePrice * 1.05, basePrice * 1.1],
+    risks: ['宏观经济不确定性', '行业政策变化'],
     summary: `${symbol} 在${interval} 周期下呈现${trend}趋势，建议${action}。关键支撑位$${(basePrice * 0.95).toFixed(2)}，阻力位$${(basePrice * 1.05).toFixed(2)}。`,
   };
 }
@@ -62,9 +63,9 @@ function generateReportData(symbol: string, interval: string, datetime: string):
 // Loader
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const symbol = url.searchParams.get("symbol") || "AAPL";
-  const interval = url.searchParams.get("interval") || "1D";
-  const datetime = url.searchParams.get("datetime") || new Date().toISOString();
+  const symbol = url.searchParams.get('symbol') || 'AAPL';
+  const interval = url.searchParams.get('interval') || '1D';
+  const datetime = url.searchParams.get('datetime') || new Date().toISOString();
 
   const data = generateReportData(symbol, interval, datetime);
 
@@ -74,16 +75,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 // Components
 function Header({ data }: { data: ReportData }) {
   const changeStr = data.change;
-  const priceClass = changeStr.startsWith("+")
-    ? "text-[var(--accent-green)]"
-    : changeStr.startsWith("-")
-    ? "text-[var(--accent-red)]"
-    : "text-[var(--accent-amber)]";
-  const bgClass = changeStr.startsWith("+")
-    ? "bg-[var(--accent-green-dim)]"
-    : changeStr.startsWith("-")
-    ? "bg-[var(--accent-red-dim)]"
-    : "bg-[var(--accent-amber-dim)]";
+  const priceClass = changeStr.startsWith('+')
+    ? 'text-[var(--accent-green)]'
+    : changeStr.startsWith('-')
+      ? 'text-[var(--accent-red)]'
+      : 'text-[var(--accent-amber)]';
+  const bgClass = changeStr.startsWith('+')
+    ? 'bg-[var(--accent-green-dim)]'
+    : changeStr.startsWith('-')
+      ? 'bg-[var(--accent-red-dim)]'
+      : 'bg-[var(--accent-amber-dim)]';
 
   return (
     <header className="flex items-start justify-between p-8 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl mb-6">
@@ -101,8 +102,10 @@ function Header({ data }: { data: ReportData }) {
       </div>
       <div className="text-right">
         <div className="font-mono text-5xl font-bold leading-none mb-2">${data.price.toFixed(2)}</div>
-        <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-semibold ${bgClass} ${priceClass}`}>
-          {changeStr.startsWith("+") ? "▲" : changeStr.startsWith("-") ? "▼" : "●"} {changeStr}
+        <span
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-semibold ${bgClass} ${priceClass}`}
+        >
+          {changeStr.startsWith('+') ? '▲' : changeStr.startsWith('-') ? '▼' : '●'} {changeStr}
         </span>
       </div>
     </header>
@@ -110,20 +113,20 @@ function Header({ data }: { data: ReportData }) {
 }
 
 function ConclusionCard({ data }: { data: ReportData }) {
-  const actionVariant = data.action === "买入" ? "buy" : data.action === "卖出" ? "sell" : "wait";
+  const actionVariant = data.action === '买入' ? 'buy' : data.action === '卖出' ? 'sell' : 'wait';
   const trendClass =
-    data.trend === "上涨"
-      ? "text-[var(--accent-green)]"
-      : data.trend === "下跌"
-      ? "text-[var(--accent-red)]"
-      : "text-[var(--accent-amber)]";
-  const riskVariant = data.riskLevel === "低" ? "buy" : data.riskLevel === "中" ? "wait" : "sell";
+    data.trend === '上涨'
+      ? 'text-[var(--accent-green)]'
+      : data.trend === '下跌'
+        ? 'text-[var(--accent-red)]'
+        : 'text-[var(--accent-amber)]';
+  const riskVariant = data.riskLevel === '低' ? 'buy' : data.riskLevel === '中' ? 'wait' : 'sell';
 
   return (
     <div className="bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl overflow-hidden mb-6">
       <div className="p-6 border-b border-[var(--border)]">
         <Badge variant={actionVariant as any} size="lg">
-          {data.action === "买入" ? "↗" : data.action === "卖出" ? "↘" : "→"} {data.action}
+          {data.action === '买入' ? '↗' : data.action === '卖出' ? '↘' : '→'} {data.action}
         </Badge>
       </div>
       <div className="grid gap-4 p-6">
@@ -133,7 +136,9 @@ function ConclusionCard({ data }: { data: ReportData }) {
         </div>
         <div className="flex justify-between items-center p-4 bg-[var(--bg-primary)] rounded-xl">
           <span className="text-sm text-[var(--text-muted)] font-medium">风险等级</span>
-          <Badge variant={riskVariant as any} size="sm">{data.riskLevel}</Badge>
+          <Badge variant={riskVariant as any} size="sm">
+            {data.riskLevel}
+          </Badge>
         </div>
         <div className="flex justify-between items-center p-4 bg-[var(--bg-primary)] rounded-xl">
           <span className="text-sm text-[var(--text-muted)] font-medium">关键支撑</span>
@@ -158,10 +163,10 @@ function SummaryCard({ data }: { data: ReportData }) {
 
 function KeyLevelsCard({ data }: { data: ReportData }) {
   const levels = [
-    { type: "resistance", label: "阻力 2", price: data.resistance2.price, note: data.resistance2.note },
-    { type: "resistance", label: "阻力 1", price: data.resistance1.price, note: data.resistance1.note },
-    { type: "support", label: "支撑 1", price: data.support1.price, note: data.support1.note },
-    { type: "support", label: "支撑 2", price: data.support2.price, note: data.support2.note },
+    { type: 'resistance', label: '阻力 2', price: data.resistance2.price, note: data.resistance2.note },
+    { type: 'resistance', label: '阻力 1', price: data.resistance1.price, note: data.resistance1.note },
+    { type: 'support', label: '支撑 1', price: data.support1.price, note: data.support1.note },
+    { type: 'support', label: '支撑 2', price: data.support2.price, note: data.support2.note },
   ];
 
   return (
@@ -171,9 +176,7 @@ function KeyLevelsCard({ data }: { data: ReportData }) {
           <div
             key={i}
             className={`flex justify-between items-center p-4 bg-[var(--bg-primary)] rounded-xl border-l-[3px] ${
-              level.type === "support"
-                ? "border-l-[var(--accent-green)]"
-                : "border-l-[var(--accent-red)]"
+              level.type === 'support' ? 'border-l-[var(--accent-green)]' : 'border-l-[var(--accent-red)]'
             }`}
           >
             <div>
@@ -193,10 +196,14 @@ function SignalsCard({ data }: { data: ReportData }) {
     <Card title="📡 买卖信号">
       <div className="flex flex-col gap-2.5">
         {data.bullishSignals.map((signal, i) => (
-          <SignalItem key={`bull-${i}`} type="bullish">{signal}</SignalItem>
+          <SignalItem key={`bull-${i}`} type="bullish">
+            {signal}
+          </SignalItem>
         ))}
         {data.bearishSignals.map((signal, i) => (
-          <SignalItem key={`bear-${i}`} type="bearish">{signal}</SignalItem>
+          <SignalItem key={`bear-${i}`} type="bearish">
+            {signal}
+          </SignalItem>
         ))}
       </div>
     </Card>
@@ -223,7 +230,7 @@ function RecommendationsCard({ data }: { data: ReportData }) {
           <div>
             <div className="text-xs text-[var(--text-muted)] uppercase mb-1">止盈目标</div>
             <div className="font-mono font-semibold text-[var(--accent-blue)]">
-              {data.takeProfit.map((p) => `$${p.toFixed(2)}`).join(" → ")}
+              {data.takeProfit.map((p) => `$${p.toFixed(2)}`).join(' → ')}
             </div>
           </div>
         </div>
@@ -237,7 +244,10 @@ function RisksCard({ data }: { data: ReportData }) {
     <Card title="⚠️ 风险提示">
       <div className="flex flex-col gap-2">
         {data.risks.map((risk, i) => (
-          <div key={i} className="flex items-center gap-2.5 px-4 py-2.5 bg-[var(--accent-amber-dim)] rounded-lg text-[var(--accent-amber)] text-sm">
+          <div
+            key={i}
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-[var(--accent-amber-dim)] rounded-lg text-[var(--accent-amber)] text-sm"
+          >
             <span>⚠</span>
             <span>{risk}</span>
           </div>

@@ -34,7 +34,7 @@ describe('TempFileManager', () => {
     expect(fs.existsSync(userDir)).toBe(true);
 
     // Wait for cleanup
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise((r) => setTimeout(r, 150));
 
     // Verify file is deleted
     expect(fs.existsSync(userDir)).toBe(false);

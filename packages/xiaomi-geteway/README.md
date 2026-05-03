@@ -43,22 +43,22 @@ npm run dev
 
 ### 认证
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/auth/status` | 检查认证状态 |
-| POST | `/api/auth/login` | 发起登录 |
-| POST | `/api/auth/verify` | 提交验证码 |
-| POST | `/api/auth/logout` | 清除认证 |
+| 方法 | 路径               | 说明         |
+| ---- | ------------------ | ------------ |
+| GET  | `/api/auth/status` | 检查认证状态 |
+| POST | `/api/auth/login`  | 发起登录     |
+| POST | `/api/auth/verify` | 提交验证码   |
+| POST | `/api/auth/logout` | 清除认证     |
 
 ### 设备
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/devices` | 列出所有设备 |
-| GET | `/api/devices/search?name=xxx` | 搜索设备 |
-| GET | `/api/devices/:did/properties?siid=2&piids=1,2,3` | 读取属性 |
-| POST | `/api/devices/:did/properties` | 设置属性 |
-| POST | `/api/devices/:did/actions` | 调用动作 |
+| 方法 | 路径                                              | 说明         |
+| ---- | ------------------------------------------------- | ------------ |
+| GET  | `/api/devices`                                    | 列出所有设备 |
+| GET  | `/api/devices/search?name=xxx`                    | 搜索设备     |
+| GET  | `/api/devices/:did/properties?siid=2&piids=1,2,3` | 读取属性     |
+| POST | `/api/devices/:did/properties`                    | 设置属性     |
+| POST | `/api/devices/:did/actions`                       | 调用动作     |
 
 ### 使用示例
 
@@ -101,6 +101,7 @@ curl -X POST http://localhost:3000/api/devices/xxx/actions \
 设备属性通过 `siid`(服务ID) 和 `piid`(属性ID) 定位。
 
 常见组合：
+
 - 开关：`siid=2, piid=1` (true/false)
 - 亮度：`siid=2, piid=2` (0-100)
 - 色温：`siid=2, piid=3`

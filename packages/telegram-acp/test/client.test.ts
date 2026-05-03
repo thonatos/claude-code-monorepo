@@ -31,10 +31,7 @@ describe('TelegramAcpClient streaming', () => {
       });
 
       expect(mockSendMessage).toHaveBeenCalledTimes(1);
-      expect(mockSendMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Thinking'),
-        'HTML'
-      );
+      expect(mockSendMessage).toHaveBeenCalledWith(expect.stringContaining('Thinking'), 'HTML');
     });
 
     it('should edit message when thought reaches EDIT_THRESHOLD with enough delay', async () => {
@@ -47,13 +44,16 @@ describe('TelegramAcpClient streaming', () => {
       });
 
       // Wait for rate limit delay (> 100ms)
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 150));
 
       // 第二次 chunk 超过 EDIT_THRESHOLD (80)
       await client.sessionUpdate({
         update: {
           sessionUpdate: 'agent_thought_chunk',
-          content: { type: 'text', text: ' and then continues with even more thinking content to reach the edit threshold limit and more characters here' },
+          content: {
+            type: 'text',
+            text: ' and then continues with even more thinking content to reach the edit threshold limit and more characters here',
+          },
         },
       });
 
@@ -121,12 +121,8 @@ describe('TelegramAcpClient streaming', () => {
         },
       });
 
-      expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining('[thought]')
-      );
-      expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining('Analyzing')
-      );
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('[thought]'));
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('Analyzing'));
     });
 
     it('should not log thoughts at warn level', async () => {
@@ -173,9 +169,7 @@ describe('TelegramAcpClient streaming', () => {
         },
       });
 
-      expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining('[tool] ReadFile')
-      );
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('[tool] ReadFile'));
       // Should send typing action
       expect(mockSendTyping).toHaveBeenCalled();
     });
@@ -201,12 +195,8 @@ describe('TelegramAcpClient streaming', () => {
         },
       });
 
-      expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining('params')
-      );
-      expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining('/src/file.ts')
-      );
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('params'));
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('/src/file.ts'));
     });
 
     it('should log tool results at info level', async () => {
@@ -226,18 +216,12 @@ describe('TelegramAcpClient streaming', () => {
           toolCallId: 'tool-1',
           title: 'ReadFile',
           status: 'completed',
-          content: [
-            { type: 'text', text: 'File content here with some text' }
-          ],
+          content: [{ type: 'text', text: 'File content here with some text' }],
         },
       });
 
-      expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining('[tool] ReadFile → completed')
-      );
-      expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining('result')
-      );
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('[tool] ReadFile → completed'));
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('result'));
     });
 
     it('should NOT send tool messages to Telegram', async () => {
@@ -257,9 +241,7 @@ describe('TelegramAcpClient streaming', () => {
           toolCallId: 'tool-1',
           title: 'ReadFile',
           status: 'completed',
-          content: [
-            { type: 'text', text: 'File content' }
-          ],
+          content: [{ type: 'text', text: 'File content' }],
         },
       });
 
@@ -280,21 +262,19 @@ describe('TelegramAcpClient streaming', () => {
       });
 
       const longResult = 'A'.repeat(500);
-      
+
       await logClient.sessionUpdate({
         update: {
           sessionUpdate: 'tool_call_update',
           toolCallId: 'tool-1',
           title: 'Test',
           status: 'completed',
-          content: [
-            { type: 'text', text: longResult }
-          ],
+          content: [{ type: 'text', text: longResult }],
         },
       });
 
       // Should truncate to ~200 chars
-      const logCall = mockLog.mock.calls.find(c => c[0].includes('result'));
+      const logCall = mockLog.mock.calls.find((c) => c[0].includes('result'));
       if (logCall) {
         expect(logCall[0].length).toBeLessThan(250);
       }
@@ -312,21 +292,19 @@ describe('TelegramAcpClient streaming', () => {
       });
 
       const longResult = 'A'.repeat(500);
-      
+
       await debugClient.sessionUpdate({
         update: {
           sessionUpdate: 'tool_call_update',
           toolCallId: 'tool-1',
           title: 'Test',
           status: 'completed',
-          content: [
-            { type: 'text', text: longResult }
-          ],
+          content: [{ type: 'text', text: longResult }],
         },
       });
 
       // Should show full result (not truncated)
-      const logCall = mockLog.mock.calls.find(c => c[0].includes('result'));
+      const logCall = mockLog.mock.calls.find((c) => c[0].includes('result'));
       if (logCall) {
         expect(logCall[0]).toContain('AAAA');
         expect(logCall[0].length).toBeGreaterThan(500);
@@ -423,7 +401,7 @@ describe('Media markdown parsing', () => {
     // Check that the message sent/edited contains the HTML code tag
     // Either sendMessage or editMessage should have been called with formatted HTML
     const allCalls = [...sendMessage.mock.calls, ...editMessage.mock.calls];
-    const formattedCall = allCalls.find(call => call[0] && typeof call[0] === 'string' && call[0].includes('![img]'));
+    const formattedCall = allCalls.find((call) => call[0] && typeof call[0] === 'string' && call[0].includes('![img]'));
 
     expect(formattedCall).toBeDefined();
     expect(formattedCall[0]).toContain('<code>![img](/tmp/test.jpg)</code>');

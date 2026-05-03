@@ -9,7 +9,7 @@ export class TelegramRateLimiter {
 
   constructor(
     private readonly minIntervalMs: number = 50,
-    private readonly maxConcurrent: number = 3
+    private readonly maxConcurrent: number = 3,
   ) {}
 
   async execute<T>(fn: () => Promise<T>): Promise<T> {
@@ -36,7 +36,7 @@ export class TelegramRateLimiter {
       const elapsed = now - this.lastCallTime;
 
       if (elapsed < this.minIntervalMs) {
-        await new Promise(r => setTimeout(r, this.minIntervalMs - elapsed));
+        await new Promise((r) => setTimeout(r, this.minIntervalMs - elapsed));
       }
 
       const fn = this.queue.shift();

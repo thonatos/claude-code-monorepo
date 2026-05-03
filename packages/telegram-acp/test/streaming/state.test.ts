@@ -14,12 +14,15 @@ describe('StreamingMessageState', () => {
     mockSendTyping = vi.fn().mockResolvedValue(undefined);
     mockLog = vi.fn();
 
-    state = new StreamingMessageState({
-      sendMessage: mockSendMessage,
-      editMessage: mockEditMessage,
-      sendTyping: mockSendTyping,
-      log: mockLog,
-    }, DEFAULT_STREAMING_CONFIG);
+    state = new StreamingMessageState(
+      {
+        sendMessage: mockSendMessage,
+        editMessage: mockEditMessage,
+        sendTyping: mockSendTyping,
+        log: mockLog,
+      },
+      DEFAULT_STREAMING_CONFIG,
+    );
   });
 
   describe('thought streaming', () => {
@@ -27,10 +30,7 @@ describe('StreamingMessageState', () => {
       await state.appendThought('This is a thought with more than twenty characters');
 
       expect(mockSendMessage).toHaveBeenCalledTimes(1);
-      expect(mockSendMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Thinking...'),
-        'HTML'
-      );
+      expect(mockSendMessage).toHaveBeenCalledWith(expect.stringContaining('Thinking...'), 'HTML');
     });
 
     it('should not send before reaching threshold', async () => {

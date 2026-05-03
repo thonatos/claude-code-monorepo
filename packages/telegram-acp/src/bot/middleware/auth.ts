@@ -2,8 +2,8 @@
  * Authentication middleware for Telegram bot.
  */
 
-import { Context } from "grammy";
-import type { TelegramAcpConfig } from "../../config.ts";
+import { Context } from 'grammy';
+import type { TelegramAcpConfig } from '../../config.ts';
 
 export function authMiddleware(config: TelegramAcpConfig) {
   return async (ctx: Context, next: () => Promise<void>) => {
@@ -25,7 +25,7 @@ export function authMiddleware(config: TelegramAcpConfig) {
     }
 
     // Group chats: reject
-    if (ctx.chat?.type !== "private") {
+    if (ctx.chat?.type !== 'private') {
       return;
     }
 

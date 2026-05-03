@@ -86,17 +86,17 @@ describe('Media Flow Integration', () => {
       expect(mockReact).toHaveBeenLastCalledWith(DEFAULT_EMOJI_MAP.media_in);
 
       // Wait for debounce to pass
-      await new Promise(r => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
+      await new Promise((r) => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
 
       await reactionManager.setReaction('thought');
       expect(mockReact).toHaveBeenLastCalledWith(DEFAULT_EMOJI_MAP.thought);
 
-      await new Promise(r => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
+      await new Promise((r) => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
 
       await reactionManager.setReaction('tool');
       expect(mockReact).toHaveBeenLastCalledWith(DEFAULT_EMOJI_MAP.tool);
 
-      await new Promise(r => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
+      await new Promise((r) => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
 
       await reactionManager.setReaction('done');
       expect(mockReact).toHaveBeenLastCalledWith(DEFAULT_EMOJI_MAP.done);
@@ -126,7 +126,7 @@ describe('Media Flow Integration', () => {
       expect(mockReact).toHaveBeenCalledTimes(1); // Still 1, skipped due to debounce
 
       // After debounce window - allowed
-      await new Promise(r => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
+      await new Promise((r) => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
       await reactionManager.setReaction('tool');
       expect(mockReact).toHaveBeenCalledTimes(2);
       expect(mockReact).toHaveBeenLastCalledWith(DEFAULT_EMOJI_MAP.tool);
@@ -140,7 +140,7 @@ describe('Media Flow Integration', () => {
       await fs.promises.writeFile(imagePath, 'fake-image-data');
 
       // Simulate upload flow (with debounce delay since previous tests set reactions)
-      await new Promise(r => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
+      await new Promise((r) => setTimeout(r, REACTION_DEBOUNCE_MS + 50));
       await reactionManager.setReaction('media_out');
       const msgId = await uploader.uploadImage('user123', imagePath);
 
@@ -163,9 +163,7 @@ describe('Media Flow Integration', () => {
     });
 
     it('should throw error when file not found', async () => {
-      await expect(
-        uploader.uploadImage('user123', '/nonexistent/file.jpg')
-      ).rejects.toThrow('Image file not found');
+      await expect(uploader.uploadImage('user123', '/nonexistent/file.jpg')).rejects.toThrow('Image file not found');
     });
   });
 
@@ -186,7 +184,7 @@ describe('Media Flow Integration', () => {
       tempManager.scheduleCleanup('user456', 100);
 
       // Wait for cleanup
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 150));
 
       // File should be deleted
       expect(fs.existsSync(result.path)).toBe(false);
@@ -222,9 +220,7 @@ describe('Media Flow Integration', () => {
         mimeType: 'image/jpeg',
       };
 
-      await expect(
-        downloader.downloadToTemp('user123', mediaInfo)
-      ).rejects.toThrow('Network error');
+      await expect(downloader.downloadToTemp('user123', mediaInfo)).rejects.toThrow('Network error');
     });
 
     it('should handle upload errors gracefully', async () => {
@@ -233,9 +229,7 @@ describe('Media Flow Integration', () => {
 
       mockApi.sendPhoto = vi.fn().mockRejectedValue(new Error('API error'));
 
-      await expect(
-        uploader.uploadImage('user123', imagePath)
-      ).rejects.toThrow('API error');
+      await expect(uploader.uploadImage('user123', imagePath)).rejects.toThrow('API error');
     });
 
     it('should not throw when reaction API fails', async () => {
@@ -257,9 +251,7 @@ describe('Media Flow Integration', () => {
         mimeType: 'image/jpeg',
       };
 
-      await expect(
-        downloader.downloadToTemp('user999', mediaInfo)
-      ).rejects.toThrow('Failed to download file');
+      await expect(downloader.downloadToTemp('user999', mediaInfo)).rejects.toThrow('Failed to download file');
     });
   });
 });

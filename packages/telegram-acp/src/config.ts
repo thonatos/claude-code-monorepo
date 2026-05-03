@@ -2,12 +2,12 @@
  * Configuration types and defaults for telegram-acp.
  */
 
-import path from "node:path";
-import os from "node:os";
-import fs from "node:fs";
-import { parse as parseYaml } from "yaml";
-import type { HistoryInjectionConfig } from "./history.ts";
-import type { LogLevel } from "./utils/logger.ts";
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
+import { parse as parseYaml } from 'yaml';
+import type { HistoryInjectionConfig } from './history.ts';
+import type { LogLevel } from './utils/logger.ts';
 
 export interface AgentPreset {
   label: string;
@@ -19,14 +19,14 @@ export interface AgentPreset {
 export interface SessionConfig {
   idleTimeoutMs: number;
   maxConcurrentUsers: number;
-  autoRecover?: boolean;              // Enable auto-recovery on crash
-  healthCheckIntervalMs?: number;      // Health check interval
+  autoRecover?: boolean; // Enable auto-recovery on crash
+  healthCheckIntervalMs?: number; // Health check interval
 }
 
 export interface HistoryConfig {
-  maxMessages: number | null;   // null = unlimited
-  maxDays: number | null;       // null = unlimited
-  injection?: HistoryInjectionConfig;  // History injection config
+  maxMessages: number | null; // null = unlimited
+  maxDays: number | null; // null = unlimited
+  injection?: HistoryInjectionConfig; // History injection config
 }
 
 export interface ReactionConfig {
@@ -64,35 +64,35 @@ export interface TelegramAcpConfig {
 
 export const PRESETS: Record<string, AgentPreset> = {
   copilot: {
-    label: "GitHub Copilot",
-    command: "pnpx",
-    args: ["@github/copilot", "--acp", "--yolo"],
+    label: 'GitHub Copilot',
+    command: 'pnpx',
+    args: ['@github/copilot', '--acp', '--yolo'],
   },
   claude: {
-    label: "Claude Code",
-    command: "pnpx",
-    args: ["@agentclientprotocol/claude-agent-acp"],
+    label: 'Claude Code',
+    command: 'pnpx',
+    args: ['@agentclientprotocol/claude-agent-acp'],
   },
   codex: {
-    label: "Codex CLI",
-    command: "pnpx",
-    args: ["@zed-industries/codex-acp"],
+    label: 'Codex CLI',
+    command: 'pnpx',
+    args: ['@zed-industries/codex-acp'],
   },
 };
 
-export const DEFAULT_REACTION_EMOJIS = ["👍", "👌", "🫡", "⏳", "🔄"];
+export const DEFAULT_REACTION_EMOJIS = ['👍', '👌', '🫡', '⏳', '🔄'];
 
 export function defaultStorageDir(): string {
-  return path.join(os.homedir(), ".telegram-acp");
+  return path.join(os.homedir(), '.telegram-acp');
 }
 
 export function defaultConfig(): TelegramAcpConfig {
   const storageDir = defaultStorageDir();
   return {
-    telegram: { botToken: "" },
+    telegram: { botToken: '' },
     agent: {
       preset: undefined,
-      command: "",
+      command: '',
       args: [],
       cwd: process.cwd(),
       showThoughts: false,
@@ -137,7 +137,7 @@ export function resolvePreset(presetName: string): { id: string; preset: AgentPr
 export function parseAgentCommand(agentStr: string): { command: string; args: string[] } {
   const parts = agentStr.trim().split(/\s+/);
   if (parts.length === 0 || !parts[0]) {
-    throw new Error("Agent command cannot be empty");
+    throw new Error('Agent command cannot be empty');
   }
   return { command: parts[0], args: parts.slice(1) };
 }
@@ -146,11 +146,11 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
   const config = defaultConfig();
 
   // Determine config file path
-  const filePath = configPath ?? path.join(defaultStorageDir(), "config.yaml");
+  const filePath = configPath ?? path.join(defaultStorageDir(), 'config.yaml');
 
   if (fs.existsSync(filePath)) {
     try {
-      const content = fs.readFileSync(filePath, "utf-8");
+      const content = fs.readFileSync(filePath, 'utf-8');
       const fileConfig = parseYaml(content) as Partial<TelegramAcpConfig>;
 
       // Merge nested objects
@@ -164,12 +164,9 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
         config.agent.showThoughts = fileConfig.agent.showThoughts ?? config.agent.showThoughts;
       }
       if (fileConfig.session) {
-        config.session.idleTimeoutMs =
-          fileConfig.session.idleTimeoutMs ?? config.session.idleTimeoutMs;
-        config.session.maxConcurrentUsers =
-          fileConfig.session.maxConcurrentUsers ?? config.session.maxConcurrentUsers;
-        config.session.autoRecover =
-          fileConfig.session.autoRecover ?? config.session.autoRecover;
+        config.session.idleTimeoutMs = fileConfig.session.idleTimeoutMs ?? config.session.idleTimeoutMs;
+        config.session.maxConcurrentUsers = fileConfig.session.maxConcurrentUsers ?? config.session.maxConcurrentUsers;
+        config.session.autoRecover = fileConfig.session.autoRecover ?? config.session.autoRecover;
         config.session.healthCheckIntervalMs =
           fileConfig.session.healthCheckIntervalMs ?? config.session.healthCheckIntervalMs;
       }
@@ -224,7 +221,7 @@ export function loadConfig(configPath?: string, presetArg?: string): TelegramAcp
 
   // Apply environment variable overrides
   const envLogLevel = process.env.TELEGRAM_ACP_LOG_LEVEL as LogLevel;
-  
+
   if (envLogLevel && ['error', 'warn', 'info', 'debug'].includes(envLogLevel)) {
     config.observability!.logging!.level = envLogLevel;
   }

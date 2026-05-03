@@ -5,18 +5,18 @@
 import type { StoredMessage } from './storage/index.js';
 
 export interface HistoryInjectionConfig {
-  strategy: 'full' | 'recent' | 'smart';  // Injection strategy
-  maxTokens: number;                       // Max tokens to inject (default: 4000)
-  maxMessages: number;                     // Max messages to inject (default: 20)
-  recentWindowMs: number;                  // Recent message window (default: 1 hour)
-  truncateThreshold: number;               // Truncate messages longer than this (default: 2000 chars)
+  strategy: 'full' | 'recent' | 'smart'; // Injection strategy
+  maxTokens: number; // Max tokens to inject (default: 4000)
+  maxMessages: number; // Max messages to inject (default: 20)
+  recentWindowMs: number; // Recent message window (default: 1 hour)
+  truncateThreshold: number; // Truncate messages longer than this (default: 2000 chars)
 }
 
 export const DEFAULT_HISTORY_CONFIG: HistoryInjectionConfig = {
   strategy: 'smart',
   maxTokens: 4000,
   maxMessages: 20,
-  recentWindowMs: 60 * 60 * 1000,  // 1 hour
+  recentWindowMs: 60 * 60 * 1000, // 1 hour
   truncateThreshold: 2000,
 };
 
@@ -27,7 +27,7 @@ export const DEFAULT_HISTORY_CONFIG: HistoryInjectionConfig = {
 export function estimateTokens(text: string): number {
   // Detect if text has significant Chinese characters
   const chineseRatio = (text.match(/[\u4e00-\u9fa5]/g) || []).length / text.length;
-  
+
   if (chineseRatio > 0.3) {
     // Chinese: ~2 chars per token
     return Math.ceil(text.length / 2);
@@ -44,7 +44,7 @@ function truncateMessage(message: StoredMessage, threshold: number): StoredMessa
   if (message.content.length <= threshold) {
     return message;
   }
-  
+
   return {
     ...message,
     content: message.content.slice(0, threshold) + '...[truncated]',
@@ -56,11 +56,14 @@ function truncateMessage(message: StoredMessage, threshold: number): StoredMessa
  */
 export class HistoryInjector {
   private config: HistoryInjectionConfig;
-  private injectionCache: Map<string, {
-    injected: boolean;
-    messages: StoredMessage[];
-    timestamp: number;
-  }> = new Map();
+  private injectionCache: Map<
+    string,
+    {
+      injected: boolean;
+      messages: StoredMessage[];
+      timestamp: number;
+    }
+  > = new Map();
 
   constructor(config: HistoryInjectionConfig = DEFAULT_HISTORY_CONFIG) {
     this.config = config;
@@ -86,7 +89,7 @@ export class HistoryInjector {
    * Full history injection (no filtering).
    */
   private buildFullContext(messages: StoredMessage[], newPrompt: string): string {
-    const truncatedMessages = messages.map(m => truncateMessage(m, this.config.truncateThreshold));
+    const truncatedMessages = messages.map((m) => truncateMessage(m, this.config.truncateThreshold));
     const historyText = this.formatHistory(truncatedMessages);
     return `${historyText}\n\n[Current message]:\n${newPrompt}`;
   }
@@ -97,10 +100,10 @@ export class HistoryInjector {
   private buildRecentContext(messages: StoredMessage[], newPrompt: string): string {
     const cutoff = Date.now() - this.config.recentWindowMs;
     const recentMessages = messages
-      .filter(m => m.timestamp >= cutoff)
+      .filter((m) => m.timestamp >= cutoff)
       .slice(-this.config.maxMessages)
-      .map(m => truncateMessage(m, this.config.truncateThreshold));
-    
+      .map((m) => truncateMessage(m, this.config.truncateThreshold));
+
     const historyText = this.formatHistory(recentMessages);
     return `${historyText}\n\n[Current message]:\n${newPrompt}`;
   }
@@ -115,9 +118,7 @@ export class HistoryInjector {
     let totalTokens = 0;
 
     // Add recent messages first (reverse order from newest to oldest)
-    const recentMessages = messages
-      .filter(m => m.timestamp >= cutoff)
-      .reverse();
+    const recentMessages = messages.filter((m) => m.timestamp >= cutoff).reverse();
 
     for (const message of recentMessages) {
       const truncated = truncateMessage(message, this.config.truncateThreshold);
@@ -137,9 +138,7 @@ export class HistoryInjector {
 
     // If budget still available, add older messages
     if (totalTokens < this.config.maxTokens && selectedMessages.length < this.config.maxMessages) {
-      const olderMessages = messages
-        .filter(m => m.timestamp < cutoff)
-        .reverse();
+      const olderMessages = messages.filter((m) => m.timestamp < cutoff).reverse();
 
       for (const message of olderMessages) {
         const truncated = truncateMessage(message, this.config.truncateThreshold);
@@ -158,13 +157,9 @@ export class HistoryInjector {
       }
     }
 
-    const historyText = selectedMessages.length > 0 
-      ? this.formatHistory(selectedMessages)
-      : '';
-    
-    return historyText 
-      ? `${historyText}\n\n[Current message]:\n${newPrompt}`
-      : newPrompt;
+    const historyText = selectedMessages.length > 0 ? this.formatHistory(selectedMessages) : '';
+
+    return historyText ? `${historyText}\n\n[Current message]:\n${newPrompt}` : newPrompt;
   }
 
   /**
@@ -172,13 +167,13 @@ export class HistoryInjector {
    */
   private formatHistory(messages: StoredMessage[]): string {
     const lines = ['[Previous conversation context]:'];
-    
+
     for (const msg of messages) {
       const role = msg.role === 'user' ? 'User' : 'Assistant';
       const timestamp = new Date(msg.timestamp).toLocaleTimeString();
       lines.push(`${role} (${timestamp}): ${msg.content}`);
     }
-    
+
     return lines.join('\n');
   }
 

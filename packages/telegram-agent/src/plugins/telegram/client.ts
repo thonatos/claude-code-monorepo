@@ -2,7 +2,7 @@ import { ArtusInjectEnum, Injectable, ScopeEnum, Inject } from '@artusx/core';
 import { Bot } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import { InjectEnum } from './constants';
-import { SocksProxyAgent } from "socks-proxy-agent";
+import { SocksProxyAgent } from 'socks-proxy-agent';
 
 @Injectable({
   id: InjectEnum.Client,
@@ -29,7 +29,7 @@ export default class TelegramClient {
           agent: proxy ? new SocksProxyAgent(proxy) : undefined,
           compress: true,
         },
-      }
+      },
     });
 
     // Auto-retry on API failures (rate limits, network issues)

@@ -2,7 +2,7 @@
  * Markdown to Telegram HTML conversion.
  */
 
-import { escapeHtml } from "./escape.ts";
+import { escapeHtml } from './escape.ts';
 
 /**
  * Convert Markdown to Telegram HTML format.

@@ -1,10 +1,7 @@
-import type { Route } from "./+types/about";
+import type { Route } from './+types/about';
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "关于" },
-    { name: "description", content: "关于 react-router v7 文件路由" },
-  ];
+  return [{ title: '关于' }, { name: 'description', content: '关于 react-router v7 文件路由' }];
 }
 
 export default function About() {

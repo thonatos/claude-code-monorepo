@@ -4,7 +4,7 @@ import {
   findDeviceByName,
   getDeviceProperties,
   setDeviceProperty,
-  callDeviceAction
+  callDeviceAction,
 } from '../services/device';
 import { SetPropertyRequest, ActionRequest } from '../types';
 
@@ -21,7 +21,7 @@ router.get('/', async (ctx) => {
  * GET /api/devices/search?name=xxx - Find device by name
  */
 router.get('/search', async (ctx) => {
-  const name = ctx.query.name as string || '';
+  const name = (ctx.query.name as string) || '';
   ctx.body = await findDeviceByName(name);
 });
 
@@ -30,9 +30,12 @@ router.get('/search', async (ctx) => {
  */
 router.get('/:did/properties', async (ctx) => {
   const did = ctx.params.did;
-  const siid = parseInt(ctx.query.siid as string || '2', 10);
-  const piidsStr = ctx.query.piids as string || '';
-  const piids = piidsStr.split(',').map(p => parseInt(p.trim(), 10)).filter(p => !isNaN(p));
+  const siid = parseInt((ctx.query.siid as string) || '2', 10);
+  const piidsStr = (ctx.query.piids as string) || '';
+  const piids = piidsStr
+    .split(',')
+    .map((p) => parseInt(p.trim(), 10))
+    .filter((p) => !isNaN(p));
 
   if (piids.length === 0) {
     ctx.status = 400;

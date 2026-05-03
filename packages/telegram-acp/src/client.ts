@@ -2,12 +2,12 @@
  * ACP Client implementation for Telegram.
  */
 
-import fs from "node:fs";
-import type * as acp from "@agentclientprotocol/sdk";
-import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from "./streaming/index.js";
-import { truncate, shouldLog, type LogLevel } from "./utils/logger.ts";
-import type { ReactionPhase } from "./reaction/types.ts";
-import { MarkdownMediaParser } from "./media/markdown-parser.ts";
+import fs from 'node:fs';
+import type * as acp from '@agentclientprotocol/sdk';
+import { StreamingMessageState, DEFAULT_STREAMING_CONFIG } from './streaming/index.js';
+import { truncate, shouldLog, type LogLevel } from './utils/logger.ts';
+import type { ReactionPhase } from './reaction/types.ts';
+import { MarkdownMediaParser } from './media/markdown-parser.ts';
 
 export interface TelegramAcpClientOpts {
   sendTyping?: () => Promise<void>;
@@ -34,7 +34,7 @@ export class TelegramAcpClient implements acp.Client {
     this.logLevel = opts.logLevel || 'info';
     this.mediaParser = opts.mediaParser;
 
-    const sendTyping = opts.sendTyping ? opts.sendTyping : async () => { };
+    const sendTyping = opts.sendTyping ? opts.sendTyping : async () => {};
 
     this.streamingState = new StreamingMessageState(
       {
@@ -43,7 +43,7 @@ export class TelegramAcpClient implements acp.Client {
         sendTyping: sendTyping,
         log: opts.log,
       },
-      DEFAULT_STREAMING_CONFIG
+      DEFAULT_STREAMING_CONFIG,
     );
   }
 
@@ -66,19 +66,15 @@ export class TelegramAcpClient implements acp.Client {
     this.chunks = [];
   }
 
-  async requestPermission(
-    params: acp.RequestPermissionRequest
-  ): Promise<acp.RequestPermissionResponse> {
-    const allowOpt = params.options.find(
-      (o) => o.kind === "allow_once" || o.kind === "allow_always"
-    );
-    const optionId = allowOpt?.optionId ?? params.options[0]?.optionId ?? "allow";
+  async requestPermission(params: acp.RequestPermissionRequest): Promise<acp.RequestPermissionResponse> {
+    const allowOpt = params.options.find((o) => o.kind === 'allow_once' || o.kind === 'allow_always');
+    const optionId = allowOpt?.optionId ?? params.options[0]?.optionId ?? 'allow';
 
-    this.opts.log(`[permission] auto-allowed: ${params.toolCall?.title ?? "unknown"}`);
+    this.opts.log(`[permission] auto-allowed: ${params.toolCall?.title ?? 'unknown'}`);
 
     return {
       outcome: {
-        outcome: "selected",
+        outcome: 'selected',
         optionId,
       },
     };
@@ -88,23 +84,23 @@ export class TelegramAcpClient implements acp.Client {
     const update = params.update;
 
     switch (update.sessionUpdate) {
-      case "agent_message_chunk":
+      case 'agent_message_chunk':
         await this.handleMessageChunk(update);
         break;
 
-      case "tool_call":
+      case 'tool_call':
         await this.handleToolCall(update);
         break;
 
-      case "agent_thought_chunk":
+      case 'agent_thought_chunk':
         await this.handleThoughtChunk(update);
         break;
 
-      case "tool_call_update":
+      case 'tool_call_update':
         await this.handleToolCallUpdate(update);
         break;
 
-      case "plan":
+      case 'plan':
         await this.handlePlan(update);
         break;
     }
@@ -112,7 +108,7 @@ export class TelegramAcpClient implements acp.Client {
 
   async readTextFile(params: acp.ReadTextFileRequest): Promise<acp.ReadTextFileResponse> {
     try {
-      const content = await fs.promises.readFile(params.path, "utf-8");
+      const content = await fs.promises.readFile(params.path, 'utf-8');
       return { content };
     } catch (err) {
       throw new Error(`Failed to read file ${params.path}: ${String(err)}`);
@@ -121,7 +117,7 @@ export class TelegramAcpClient implements acp.Client {
 
   async writeTextFile(params: acp.WriteTextFileRequest): Promise<acp.WriteTextFileResponse> {
     try {
-      await fs.promises.writeFile(params.path, params.content, "utf-8");
+      await fs.promises.writeFile(params.path, params.content, 'utf-8');
       return {};
     } catch (err) {
       throw new Error(`Failed to write file ${params.path}: ${String(err)}`);
@@ -135,7 +131,7 @@ export class TelegramAcpClient implements acp.Client {
   }
 
   private async handleMessageChunk(update: any): Promise<void> {
-    if (update.content.type === "text") {
+    if (update.content.type === 'text') {
       const chunk = update.content.text;
       this.chunks.push(chunk);
 
@@ -167,10 +163,7 @@ export class TelegramAcpClient implements acp.Client {
           let modifiedText = fullText;
           for (const media of result.media) {
             // ![alt](path) → `![alt](path)`
-            modifiedText = modifiedText.replace(
-              media.syntax,
-              `\`${media.syntax}\``
-            );
+            modifiedText = modifiedText.replace(media.syntax, `\`${media.syntax}\``);
           }
           // Update chunks with modified text
           this.chunks = [modifiedText];
@@ -186,13 +179,13 @@ export class TelegramAcpClient implements acp.Client {
 
       // Continue with text streaming (will be converted to HTML later)
       await this.streamingState.appendText(chunk);
-    } else if (update.content.type === "image") {
+    } else if (update.content.type === 'image') {
       // Agent generated image
       const imagePath = update.content.uri || update.content.data || update.content.path;
       if (this.opts.onMediaUpload && imagePath) {
         await this.opts.onMediaUpload(imagePath, 'image');
       }
-    } else if (update.content.type === "audio") {
+    } else if (update.content.type === 'audio') {
       // Agent generated audio
       const audioPath = update.content.uri || update.content.data || update.content.path;
       if (this.opts.onMediaUpload && audioPath) {
@@ -202,7 +195,7 @@ export class TelegramAcpClient implements acp.Client {
   }
 
   private async handleThoughtChunk(update: any): Promise<void> {
-    if (update.content.type === "text") {
+    if (update.content.type === 'text') {
       const thought = update.content.text;
 
       // Always log thoughts to CLI (default info level)
@@ -251,16 +244,14 @@ export class TelegramAcpClient implements acp.Client {
     const title = update.title || 'Tool';
     const status = update.status || 'completed';
     const result = this.extractToolResult(update.content);
-    
+
     // CLI logging only
     if (shouldLog('info', this.logLevel)) {
       this.opts.log(`[tool] ${title} → ${status}`);
     }
-    
+
     if (shouldLog('info', this.logLevel) && result) {
-      const preview = shouldLog('debug', this.logLevel) 
-        ? result 
-        : truncate(result, 200);
+      const preview = shouldLog('debug', this.logLevel) ? result : truncate(result, 200);
       this.opts.log(`  result: ${preview}`);
     }
   }
@@ -269,7 +260,7 @@ export class TelegramAcpClient implements acp.Client {
     if (update.entries) {
       const items = update.entries
         .map((e: acp.PlanEntry, i: number) => `  ${i + 1}. [${e.status}] ${e.content}`)
-        .join("\n");
+        .join('\n');
       this.opts.log(`[plan]\n${items}`);
     }
   }
@@ -291,13 +282,13 @@ export class TelegramAcpClient implements acp.Client {
 
   private extractToolResult(content: any[] | null): string | undefined {
     if (!content) return undefined;
-    
+
     for (const c of content) {
       if (c.type === 'text') {
         return c.text;
       }
     }
-    
+
     return undefined;
   }
 
